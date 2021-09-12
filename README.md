@@ -6,10 +6,10 @@ digite `anime` e siga as instruções para utilizar.
 
 parametros:
 
--  -e `episódio ou intervalo de episódios`
--  --play `player`
--  -s ou --silent `não tocar os episódios automaticamente`
--  -y `aceite todas as opções padrões`
+-  -e (episódio ou intervalo de episódios)
+-  --play (player)
+-  -s ou --silent (não tocar os episódios automaticamente)
+-  -y (aceite todas as opções padrões)
 
 ## Instalação
 
