@@ -19,4 +19,4 @@ na pasta do programa, execute no terminal `bash install.sh`
 
 ### Windows
 
-adicione o arquivo `anime.bat` ao `PATH` 
+execute `pip install -r requirements.txt` e adicione o arquivo `anime.bat` à variável `PATH` 
