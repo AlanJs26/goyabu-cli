@@ -2,6 +2,8 @@
 
 ## assista animes diretamente do terminal
 
+![](./record.gif)
+
 digite `anime` e siga as instruções para utilizar.
 
 >parametros:
