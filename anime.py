@@ -1,15 +1,15 @@
+import os, sys, errno
 import re
 import requests
 from bs4 import BeautifulSoup as bs4
-import termtables as tt
-import os
-import sys
-import errno
 import json
 import datetime
 from python_mpv_jsonipc import MPV
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
+import termtables as tt
+from dropdown import drawTable, bcolors
+import time
 
 mpv = MPV(ipc_socket="/tmp/mpv-socket")
 
@@ -33,8 +33,13 @@ if os.path.isfile(sessionpath):
 else:
     with open(sessionpath, 'w') as rawjson:
         json.dump({}, rawjson)
-tableVals = [[i+1, f'{name} - Episódio {lastSession[name]["lastep"]}', lastSession[name]['date']] for i,name in enumerate(lastSession)]
+
+tableVals = [
+    [i+1, f'{name} - Episódio {lastSession[name]["lastep"]}', lastSession[name]['date']] if lastSession[name]["lastep"] < lastSession[name]['numberOfEpisodes'] else
+    [i+1, f'{bcolors["green"]}{name} - Completo{bcolors["end"]}', lastSession[name]['date']]
+ for i,name in enumerate(lastSession)]
 if len(tableVals) > 1: tableVals.reverse()
+
 if len(lastSession) and not silent:
     table = tt.to_string(
         tableVals,
@@ -53,20 +58,25 @@ if searchterm == '':
         searchterm = str(input(f'Nome do Anime:{"[1]:" if len(lastSession) else ""} '))
     except KeyboardInterrupt:
         print('')
-        exit()
+        os._exit(0)
 
 if searchterm == '':
     if len(lastSession):
         searchterm = '1'
     else:
         print('Insira um nome válido para continuar\n')
-        exit()
+        os._exit(0)
+
+
+#  Clear the terminal
+sys.stdout.write(f"\033[{len(tableVals)+5}F")
+sys.stdout.write("\r")
+sys.stdout.write(f"\033[J")
 
 if searchterm.isdigit() and int(searchterm) <= len(lastSession):
     searchterm = list(lastSession.keys())[int(searchterm)-1]
     slicelist = [str(lastSession[searchterm]['lastep']), '']
     yesall = True
-
 
 
 html = requests.get(f'https://goyabu.com/?s={"+".join(searchterm.split(" "))}').text
@@ -78,25 +88,38 @@ namelist = [name.text for name in eplist.find_all('h3')]
 
 if len(namelist) == 0:
     print(f'\nNenhum anime com o nome "{searchterm}" foi encontrado. Tente outro nome.')
-    exit()
+    os._exit(0)
 
-if not silent:
-    table = tt.to_string(
-        [[i+1, namelist[i]] for i in range(len(namelist))],
-        header=["", "Animes"],
-        style=tt.styles.rounded,
-        alignment="rl",
-    )
-    table = table.split('\n')
-    print('\n'.join(table[0:2]+[table[2]]+table[1::2][1:]+table[-1:]))
+chosenId = '1'
+
+if  yesall == False and silent == False:
+    #  table = tt.to_string(
+        #  [[i+1, namelist[i]] for i in range(len(namelist))],
+        #  header=["", "Animes"],
+        #  style=tt.styles.rounded,
+        #  alignment="rl",
+    #  )
+    #  table = table.split('\n')
+    #  print('\n'.join(table[0:2]+[table[2]]+table[1::2][1:]+table[-1:]))
+
+    tableVals = [[i+1, namelist[i]] for i in range(len(namelist))]
+    result = drawTable(tableVals, ["", "Animes"], "rl")
+    chosenId = str(result[0]) 
 
 
-chosenid = '1'
-try:
-    chosenId = str(input('Escolha o anime pelo Id [1]: ')) if not yesall else '1'
-except KeyboardInterrupt:
-    print('')
-    exit()
+    #  Clear the terminal
+    sys.stdout.write(f"\033[{len(tableVals)+4}F")
+    sys.stdout.write("\r")
+
+sys.stdout.write(f"\033[J")
+
+
+#  try:
+    #  chosenId = str(input('Escolha o anime pelo Id [1]: ')) if not yesall else '1'
+#  except KeyboardInterrupt:
+    #  print('')
+    #  exit()
+
 chosenId = 1 if not chosenId.isdigit() else int(chosenId)
 chosenhref = hreflist[chosenId-1]
 chosenName = namelist[chosenId-1]
@@ -125,20 +148,11 @@ def getvideourl(url, id):
 
 eplist = soup.find(class_='episodes-container')
 
-if slicelist != [''] and slicelist != None:
-    slicelistParsed = [int(i) if i.isdigit() else None for i in slicelist]
-    namelist = [name.text for name in eplist.find_all('h3')][slice(slicelistParsed[0]-1, slicelistParsed[1]+1 if slicelistParsed[1] else None)]
-    hreflist = [ep['href'] for ep in eplist.find_all('a')][slice(slicelistParsed[0]-1, slicelistParsed[1]+1 if slicelistParsed[1] else None)]
-    idlist = [href[26:-1] for href in hreflist]
-    videolist = ['' for _ in range(len(idlist))]
-    count = slicelistParsed[0]
-    slicelist=['']
-else:
-    hreflist = [ep['href'] for ep in eplist.find_all('a')]
-    idlist = [href[26:-1] for href in hreflist]
-    namelist = [name.text for name in eplist.find_all('h3')]
-    count = 1
-    videolist = ['' for _ in range(len(idlist))]
+hreflist = [ep['href'] for ep in eplist.find_all('a')]
+idlist = [href[26:-1] for href in hreflist]
+namelist = [name.text for name in eplist.find_all('h3')]
+count = 1
+videolist = ['' for _ in range(len(idlist))]
 
 with tqdm(total=len(idlist)) as pbar:
     with ThreadPoolExecutor(max_workers=3) as executor:
@@ -171,13 +185,14 @@ if slicelist == ['']:
         slicelist.append('')
     except KeyboardInterrupt:
         print('')
-        exit()
+        os._exit(0)
 
 
 slicelist = [int(i) if i.isdigit() else None for i in slicelist]
-count =slicelist[0] if slicelist[0] and count == 1 else count
-videolist = videolist[slice(slicelist[0], slicelist[1]+1 if slicelist[1] else None)]
-namelist = namelist[slice(slicelist[0], slicelist[1]+1 if slicelist[1] else None)]
+if all(slicelist) or slicelist[1] != None:
+    count = slicelist[0] if slicelist[0] and count == 1 else count
+    videolist = videolist[slice(slicelist[0], slicelist[1]+1 if slicelist[1] else None)]
+    namelist = namelist[slice(slicelist[0], slicelist[1]+1 if slicelist[1] else None)]
 
 fileText = '#EXTM3U\n\n'
 for video in videolist:
@@ -188,7 +203,7 @@ for video in videolist:
 folderpath = os.path.join(os.path.expanduser('~'), "Downloads/anime-playlists/")
 filepath = os.path.join(folderpath, f'{chosenName}.m3u')
 
-if not silent: print(f'Salvando em "{folderpath}"')
+if not silent: print(f'Salvando em "{filepath}"')
 
 if not os.path.exists(folderpath):
     try:
@@ -201,8 +216,9 @@ with open(filepath, 'w') as writer:
     writer.writelines(fileText)
 
 newSessionItem = {
-    'episodes': [[namelist[i], videolist[i]] for i in range(len(namelist))],
+    #  'episodes': [[namelist[i], videolist[i]] for i in range(len(namelist))],
     'date': datetime.datetime.now().strftime('%d-%m-%y'),
+    'numberOfEpisodes': len(namelist),
     'lastep': 1
 }
 
@@ -235,8 +251,14 @@ if('--play' in args):
     os.system(f'{player} "{filepath}"')
     mpv.terminate()
 else:
-    mpv.play(filepath)
     mpv.playlist_pos = 0
+    mpv.play(filepath)
+    mpv.command('keypress', 'space')
+    #  print(slicelist)
+    #  mpv.playlist_pos = slicelist[0] if any(slicelist) else 0 
+    time.sleep(2)
+    mpv.command('playlist-play-index', slicelist[0]-1 if slicelist[0] else 0)
+    mpv.command('keypress', 'space')
     # mpv.volume = 10
 
 
