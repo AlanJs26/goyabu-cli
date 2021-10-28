@@ -8,7 +8,7 @@ from python_mpv_jsonipc import MPV
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 import termtables as tt
-from dropdown import drawTable, bcolors
+from dropdown import interactiveTable
 import time
 
 mpv = MPV(ipc_socket="/tmp/mpv-socket")
@@ -36,29 +36,64 @@ else:
 
 tableVals = [
     [i+1, f'{name} - Episódio {lastSession[name]["lastep"]}', lastSession[name]['date']] if lastSession[name]["lastep"] < lastSession[name]['numberOfEpisodes'] else
-    [i+1, f'{bcolors["green"]}{name} - Completo{bcolors["end"]}', lastSession[name]['date']]
+    [i+1, f'{name} - Completo', lastSession[name]['date']]
  for i,name in enumerate(lastSession)]
-if len(tableVals) > 1: tableVals.reverse()
+staticHighlights = [[i, 'green'] for i,name in enumerate(lastSession) if lastSession[name]['lastep'] >= lastSession[name]['numberOfEpisodes']]
+if len(tableVals) > 1:
+    tableVals.reverse()
+    staticHighlights = [[len(tableVals)-1-i, color] for i, color in staticHighlights]
 
 if len(lastSession) and not silent:
-    table = tt.to_string(
-        tableVals,
-        header=["", "Sessões Anteriores", "Data"],
-        style=tt.styles.rounded,
-        alignment="rcc",
-    )
-    table = table.split('\n')
-    print('\n'.join(table[0:2]+[table[2]]+table[1::2][1:]+table[-1:]))
+    #  table = tt.to_string(
+        #  tableVals,
+        #  header=["", "Sessões Anteriores", "Data"],
+        #  style=tt.styles.rounded,
+        #  alignment="rcc",
+    #  )
+    #  table = table.split('\n')
+    #  print('\n'.join(table[0:2]+[table[2]]+table[1::2][1:]+table[-1:]))
 
+    results = [[],[],None]
+
+    while len(results[1]) != 1 and results[0] != None:
+        results = interactiveTable(tableVals, ["", "Sessões Anteriores", "Data"], "rcc", behaviour='multiSelectWithText', hintText='Nome do Anime[1]: ', staticHighlights=staticHighlights)
+        if results[0] == None: continue
+
+        count = 0
+        for item in tableVals[::-1]:
+            if item[0]==results[0][0]:
+                break
+            count+=1
+
+        posToRemove = [item[0] for item in results[1][1:]]
+        tableVals = [item for i, item in enumerate(tableVals) if i not in posToRemove]
+        staticHighlights = [item for item in staticHighlights if item[0] not in posToRemove]
+
+
+        leftSide = [item for item in staticHighlights if item[0] < count]
+        rightSide = [item for item in staticHighlights if item[0] > count]
+        staticHighlights = [*leftSide, *[[i-(len(results[1])-1), color] for i,color in rightSide]]
+
+
+    posToMaintain = [item[0] for item in tableVals]
+    lastSession = {k: lastSession[k] for i,k in enumerate(lastSession) if i+1 in posToMaintain}
+
+    if results[0] != None and len(results[1]) == 1 and results[-1] == '':
+        searchterm = str(results[0][0])
+    else:
+        searchterm = results[-1]
+
+    #  table = interactiveTable(tableVals, ["", "Sessões Anteriores", "Data"], "rcc", behaviour='multiSelectWithText', hintText='Nome do Anime: ', staticHighlights=staticHighlights)
+    
 if len(args)>=1 and args[0] not in ['-y', '-s', '--silent', '-e']:
     searchterm = args[0]
 
-if searchterm == '': 
-    try:
-        searchterm = str(input(f'Nome do Anime:{"[1]:" if len(lastSession) else ""} '))
-    except KeyboardInterrupt:
-        print('')
-        os._exit(0)
+#  if searchterm == '': 
+    #  try:
+        #  searchterm = str(input(f'Nome do Anime:{"[1]:" if len(lastSession) else ""} '))
+    #  except KeyboardInterrupt:
+        #  print('')
+        #  os._exit(0)
 
 if searchterm == '':
     if len(lastSession):
@@ -69,9 +104,9 @@ if searchterm == '':
 
 
 #  Clear the terminal
-sys.stdout.write(f"\033[{len(tableVals)+5}F")
-sys.stdout.write("\r")
-sys.stdout.write(f"\033[J")
+#  sys.stdout.write(f"\033[{len(tableVals)+5}F")
+#  sys.stdout.write("\r")
+#  sys.stdout.write(f"\033[J")
 
 if searchterm.isdigit() and int(searchterm) <= len(lastSession):
     searchterm = list(lastSession.keys())[int(searchterm)-1]
@@ -93,38 +128,20 @@ if len(namelist) == 0:
 chosenId = '1'
 
 if  yesall == False and silent == False:
-    #  table = tt.to_string(
-        #  [[i+1, namelist[i]] for i in range(len(namelist))],
-        #  header=["", "Animes"],
-        #  style=tt.styles.rounded,
-        #  alignment="rl",
-    #  )
-    #  table = table.split('\n')
-    #  print('\n'.join(table[0:2]+[table[2]]+table[1::2][1:]+table[-1:]))
-
     tableVals = [[i+1, namelist[i]] for i in range(len(namelist))]
-    result = drawTable(tableVals, ["", "Animes"], "rl")
-    chosenId = str(result[0]) 
+    result = interactiveTable(tableVals, ["", "Animes"], "rl")
+    chosenId = str(result[0][0]) 
 
 
     #  Clear the terminal
-    sys.stdout.write(f"\033[{len(tableVals)+4}F")
-    sys.stdout.write("\r")
+    #  sys.stdout.write(f"\033[{len(tableVals)+4}F")
+    #  sys.stdout.write("\r")
 
 sys.stdout.write(f"\033[J")
-
-
-#  try:
-    #  chosenId = str(input('Escolha o anime pelo Id [1]: ')) if not yesall else '1'
-#  except KeyboardInterrupt:
-    #  print('')
-    #  exit()
 
 chosenId = 1 if not chosenId.isdigit() else int(chosenId)
 chosenhref = hreflist[chosenId-1]
 chosenName = namelist[chosenId-1]
-
-print('')
 
 html = requests.get(chosenhref).text
 soup = bs4(html, 'html.parser')
@@ -137,13 +154,9 @@ def getvideourl(url, id):
 
     allmatches = [match for match in allmatches if match != '']
     if len(allmatches) == 0:
-        # return ''
         return 
     global videolist
-    # videolist[id] = [allmatches[-1], id]
     videolist[id] = allmatches[-1]
-    # print(id)
-    # return allmatches[-1]
 
 
 eplist = soup.find(class_='episodes-container')
