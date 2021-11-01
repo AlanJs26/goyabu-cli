@@ -1,12 +1,7 @@
 import os, errno
-import re
-import requests
-from bs4 import BeautifulSoup as bs4
 import json
 import datetime
 from python_mpv_jsonipc import MPV
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from tqdm import tqdm
 import termtables as tt
 from dropdown import interactiveTable
 import time
@@ -36,7 +31,6 @@ if args.episodes:
     slicelist = args.episodes.split(':')
     slicelist.append('')
 
-
 # read last session file, if don't exist create one
 lastSession={}
 sessionpath = os.path.join(os.path.dirname(__file__), '.anime-lastsession.json')
@@ -47,10 +41,11 @@ else:
     with open(sessionpath, 'w') as rawjson:
         json.dump({}, rawjson)
 
+
 # Format last session table, highligthing completed animes
 tableVals = [
-    [i+1, f'{name} - Episódio {lastSession[name]["lastep"]}', lastSession[name]['date']] if lastSession[name]["lastep"] < lastSession[name]['numberOfEpisodes'] else
-    [i+1, f'{name} - Completo', lastSession[name]['date']] for i,name in enumerate(lastSession)]
+    [i+1, f'{name} - Episódio {lastSession[name]["lastep"]} [{lastSession[name]["numberOfEpisodes"]}]', lastSession[name]['date']] if lastSession[name]["lastep"] < lastSession[name]['numberOfEpisodes'] else
+    [i+1, f'{name} - Completo [{lastSession[name]["numberOfEpisodes"]}]', lastSession[name]['date']] for i,name in enumerate(lastSession)]
 
 staticHighlights = [[i, 'green'] for i,name in enumerate(lastSession) if lastSession[name]['lastep'] >= lastSession[name]['numberOfEpisodes']]
 
@@ -91,15 +86,13 @@ if len(lastSession) and args.name == '':
     else:
         args.name = results[-1]
 
-    #  table = interactiveTable(tableVals, ["", "Sessões Anteriores", "Data"], "rcc", behaviour='multiSelectWithText', hintText='Nome do Anime: ', staticHighlights=staticHighlights)
-
 #  If the search term is empty and exists last session items, choose the first last session
 if args.name == '':
     if len(lastSession):
         args.name = '1'
     else:
         print('Insira um nome válido para continuar\n')
-        os._exit(0)
+        exit()
 
 #  If users choses one of last session items
 if args.name.isdigit() and int(args.name) <= len(lastSession):
@@ -107,66 +100,29 @@ if args.name.isdigit() and int(args.name) <= len(lastSession):
     slicelist = [str(lastSession[args.name]['lastep']), '']
     args.yes = True
 
-
-html = requests.get(f'https://goyabu.com/?s={"+".join(args.name.split(" "))}').text
-soup = bs4(html, 'html.parser')
-
-eplist = soup.find(class_='episode-container')
-hreflist = [ep['href'] for ep in eplist.find_all('a')]
-namelist = [name.text for name in eplist.find_all('h3')]
+namelist = searchAnime(args.name, engines=['goyabu'])[1]
 
 if len(namelist) == 0:
     print(f'\nNenhum anime com o nome "{args.name}" foi encontrado. Tente outro nome.')
-    os._exit(0)
+    exit()
 
-chosenId = '1'
 
 # print a interactive table to choose the anime
 if  args.yes == False:
     tableVals = [[i+1, namelist[i]] for i in range(len(namelist))]
     result = interactiveTable(tableVals, ["", "Animes"], "rl")
-    chosenId = str(result[0][0]) 
+    args.name = result[0][1]
 
 
 #  sys.stdout.write(f"\033[J")
 
-chosenId = 1 if not chosenId.isdigit() else int(chosenId)
-chosenhref = hreflist[chosenId-1]
-chosenName = namelist[chosenId-1]
-
-html = requests.get(chosenhref).text
-soup = bs4(html, 'html.parser')
-
-def getvideourl(url, id):
-    html=requests.get(url).text 
-    allmatches = re.findall(r"(?<=<source).+?src='(.*?)(?='\s+?/>)", html)
-    morematches = re.findall(r"file: \"(.+?)\"}", html)
-    allmatches = allmatches+morematches
-
-    allmatches = [match for match in allmatches if match != '']
-    if len(allmatches) == 0:
-        return 
-    global videolist
-    videolist[id] = allmatches[-1]
-
-
-eplist = soup.find(class_='episodes-container')
-
-hreflist = [ep['href'] for ep in eplist.find_all('a')]
-idlist = [href[26:-1] for href in hreflist]
-namelist = [name.text for name in eplist.find_all('h3')]
-count = 1
-videolist = ['' for _ in range(len(idlist))]
-
-with tqdm(total=len(idlist)) as pbar:
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        futures = [executor.submit(getvideourl, f'https://goyabu.com/embed.php?id={id}', i) for i,id in enumerate(idlist)]
-        for _ in as_completed(futures):
-            pbar.update(1)
+episodes = animeInfo('episodes', query=args.name)['goyabu']
+episodesNames = [name for name,_ in episodes.items()]
+videolist = [link for _,link in episodes.items()]
 
 if not args.silent:
     table = tt.to_string(
-        [[i+1, namelist[i]] for i in range(len(namelist))],
+        [[i+1, episodesNames[i]] for i in range(len(episodesNames))],
         header=["","Episódios"],
         style=tt.styles.rounded,
         alignment="rl",
@@ -176,11 +132,12 @@ if not args.silent:
 
 
 if slicelist == ['']:
-    print('''
-    n - único episódio
-    n:n - intervalo de episódios
-    todos - todos os episódios
-    ''')
+    if not args.silent:
+        print('''
+        n - único episódio
+        n:n - intervalo de episódios
+        todos - todos os episódios
+        ''')
     try:
         slicelist = str(input('Episódios para assistir [todos]: ')).split(':') if not args.yes else ['todos']
         slicelist.append('')
@@ -190,11 +147,12 @@ if slicelist == ['']:
 
 
 # extract the choosen range from the fetched lists
+count = 1
 slicelist = [int(i) if i.isdigit() else None for i in slicelist]
 if all(slicelist) or slicelist[1] != None:
     count = slicelist[0] if slicelist[0] and count == 1 else count
     videolist = videolist[slice(slicelist[0], slicelist[1]+1 if slicelist[1] else None)]
-    namelist = namelist[slice(slicelist[0], slicelist[1]+1 if slicelist[1] else None)]
+    episodesNames = episodesNames[slice(slicelist[0], slicelist[1]+1 if slicelist[1] else None)]
 
 
 # create the playlist file for the player
@@ -205,7 +163,7 @@ for video in videolist:
     count=count+1
 
 folderpath = os.path.join(os.path.expanduser('~'), "Downloads/anime-playlists/")
-filepath = os.path.join(folderpath, f'{chosenName}.m3u')
+filepath = os.path.join(folderpath, f'{args.name}.m3u')
 
 if not args.silent: print(f'Salvando em "{filepath}"')
 
@@ -222,7 +180,7 @@ with open(filepath, 'w') as writer:
 newSessionItem = {
     #  'episodes': [[namelist[i], videolist[i]] for i in range(len(namelist))],
     'date': datetime.datetime.now().strftime('%d-%m-%y'),
-    'numberOfEpisodes': len(namelist),
+    'numberOfEpisodes': len(episodesNames),
     'lastep': 1
 }
 
@@ -241,9 +199,9 @@ if(args.player == 'mpv'):
         global lastSession
 
         newSessionItem['lastep'] = mpvEpIndex
-        lastSession[chosenName] = newSessionItem
+        lastSession[args.name] = newSessionItem
 
-        lastSession = {k: lastSession[k] for k in [chosenName]+[item for item in lastSession.keys() if item!=chosenName]}
+        lastSession = {k: lastSession[k] for k in [args.name]+[item for item in lastSession.keys() if item!=args.name]}
 
         with open(sessionpath, 'w') as rawjson:
             json.dump(lastSession, rawjson)
@@ -259,14 +217,14 @@ if(args.player == 'mpv'):
     mpv.playlist_pos = 0
     mpv.play(filepath)
     mpv.command('keypress', 'space')
-    #  print(slicelist)
-    #  mpv.playlist_pos = slicelist[0] if any(slicelist) else 0 
     time.sleep(2)
     mpv.command('playlist-play-index', slicelist[0]-1 if slicelist[0] else 0)
     mpv.command('keypress', 'space')
-    # mpv.volume = 10
 else:
     os.system(f'{args.player} "{filepath}"')
+
+for key in lastSession:
+    lastSession[key]['numberOfEpisodes'] = animeInfo('episodesNum', query=key)['anilist'] 
 
 
         
