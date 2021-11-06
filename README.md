@@ -2,8 +2,8 @@
 
 ## assista animes diretamente do terminal
 
-![](./record1.gif)
-![](./record2.gif)
+![](./img/record1.gif)
+![](./img/record2.gif)
 
 digite `anime` e siga as instruções para utilizar.
 
