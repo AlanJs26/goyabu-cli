@@ -21,7 +21,7 @@ Na pasta do programa, execute no terminal `bash install.sh`
 
 ## Instalação manual
 
-O programa não foi testado no windows, por isso não há garantia que funcione em outros sistemas operacionais.
+> O programa foi apenas testado no linux, por isso não há garantia que funcione em outros sistemas operacionais.
 
 Execute `pip install -r requirements.txt`
 
