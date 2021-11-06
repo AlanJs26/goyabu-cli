@@ -2,8 +2,8 @@
 
 ## assista animes diretamente do terminal
 
-![](./img/record1.gif)
-![](./img/record2.gif)
+![Novo anime](./img/record1.gif)
+![Retomando uma sessão anterior](./img/record2.gif)
 
 digite `anime` e siga as instruções para utilizar.
 
@@ -17,7 +17,9 @@ digite `anime` e siga as instruções para utilizar.
 
 ## Instalação
 
-Na pasta do programa, execute no terminal `bash install.sh`
+Clone este repositório e, na pasta do programa, execute o comando `bash install.sh`
+
+Com isso digitando `anime` no terminal, o programa deve funcionar
 
 ## Instalação manual
 
