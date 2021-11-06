@@ -11,4 +11,4 @@ sudo chmod u+x "$HOME/Documentos/animedl/anime.sh"
 ln -sf "$HOME/Documentos/animedl/anime.sh" "$HOME/.local/bin/anime"
 #ln "$HOME/Documentos/animedl/anime.sh" anime
 
-echo "\ngoyabu-cli instalado com sucesso!\n\ndigite 'anime' no terminal para começar"
+printf "\ngoyabu-cli instalado com sucesso!\n\ndigite 'anime' no terminal para começar"
