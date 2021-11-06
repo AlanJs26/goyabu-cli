@@ -1,3 +1,6 @@
 termtables==0.2.4
-requests==2.25.1
+requests==2.11.1
+python_mpv_jsonipc==1.1.13
+python_anilist==1.0.5
+tqdm==4.61.2
 beautifulsoup4==4.10.0

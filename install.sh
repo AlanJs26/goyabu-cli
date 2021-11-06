@@ -3,9 +3,10 @@
 sudo apt install python3 mpv python3-pip
 pip3 install -r ./requirements.txt
 
-mkdir "$HOME/Documentos/animedl"
-cp anime.py "$HOME/Documentos/animedl"
+mkdir -p "$HOME/Documentos/animedl"
+cp ./{animeScrapper,dropdown,anime,rawserver}.py "$HOME/Documentos/animedl"
+cp -r scrappers "$HOME/Documentos/animedl/scrappers"
 echo "$(which python3) '$HOME/Documentos/animedl/anime.py' \$@" > "$HOME/Documentos/animedl/anime.sh"
-chmod u+x "$HOME/Documentos/animedl/anime.sh"
-ln "$HOME/Documentos/animedl/anime.sh" "$HOME/.local/bin/anime"
+sudo chmod u+x "$HOME/Documentos/animedl/anime.sh"
+ln -sf "$HOME/Documentos/animedl/anime.sh" "$HOME/.local/bin/anime"
 #ln "$HOME/Documentos/animedl/anime.sh" anime

@@ -2,23 +2,27 @@
 
 ## assista animes diretamente do terminal
 
-![](./record.gif)
+![](./record1.gif)
+![](./record2.gif)
 
 digite `anime` e siga as instruções para utilizar.
 
->parametros:
+>Parametros:
 >
-> -  `-e` episódio ou intervalo de episódios
-> -  `--play` player utilizado
-> -  `-s` ou `--silent` não tocar os episódios automaticamente
+> -  `--episodes` episódio ou intervalo de episódios
+> -  `--player` player a ser utilizado
+> -  `--silent` mostrar o pouca informação na tela
+> -  `--update` atualizar os episódios salvos
 > -  `-y` aceite todas as opções padrões
 
 ## Instalação
 
-### Linux
+Na pasta do programa, execute no terminal `bash install.sh`
 
-na pasta do programa, execute no terminal `bash install.sh`
+## Instalação manual
 
-### Windows
+O programa não foi testado no windows, por isso não há garantia que funcione em outros sistemas operacionais.
 
-execute `pip install -r requirements.txt` e adicione o arquivo `anime.bat` à variável `PATH` 
+Execute `pip install -r requirements.txt`
+
+Assim o programa pode ser executado com `python anime.py` 

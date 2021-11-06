@@ -1,15 +1,17 @@
 import os, errno
 import json
-import datetime
-from python_mpv_jsonipc import MPV
+from datetime import datetime
 import termtables as tt
-from dropdown import interactiveTable
-import time
-import argparse
-from argparse import RawTextHelpFormatter
+from dropdown import interactiveTable, bcolors
+from time import sleep
+from argparse import RawTextHelpFormatter, ArgumentParser
 from animeScrapper import animeInfo, searchAnime
+from copy import deepcopy
+from rawserver import serveRawText
+from scrappers.utils import runInParallel 
 
-parser = argparse.ArgumentParser(description='plays anime from terminal', formatter_class=RawTextHelpFormatter)
+
+parser = ArgumentParser(description='plays anime from terminal', formatter_class=RawTextHelpFormatter)
 
 parser.add_argument('name',          action='store', default='',    type=str, nargs='?',
                     help='anime name')
@@ -21,8 +23,15 @@ parser.add_argument('--episodes',    action='store', default='',    type=str, me
                     help='range of episodes to watch\nformat:  n   - single episode\n         n:n - range of episodes')
 parser.add_argument('--player',      action='store', default='mpv', type=str,
                     help='player to run the anime. The default is mpv')
+parser.add_argument('--update',      action='store_true',         
+                    help='update the local list')
 
 args = parser.parse_args()
+
+if args.update == True:
+    args.player = 'none'
+    args.episodes = ''
+    args.silent = True
 
 
 slicelist = ['']
@@ -41,42 +50,28 @@ else:
     with open(sessionpath, 'w') as rawjson:
         json.dump({}, rawjson)
 
+def nameTrunc(text, length):
+    columns = os.get_terminal_size().columns
+    if columns < length:
+        nameSlice = slice(None, len(text)-(length-columns))
+        return text[nameSlice]+'...'
+    return text
 
 # Format last session table, highligthing completed animes
 tableVals = [
-    [i+1, f'{name} - Episódio {lastSession[name]["lastep"]} [{lastSession[name]["numberOfEpisodes"]}]', lastSession[name]['date']] if lastSession[name]["lastep"] < lastSession[name]['numberOfEpisodes'] else
-    [i+1, f'{name} - Completo [{lastSession[name]["numberOfEpisodes"]}]', lastSession[name]['date']] for i,name in enumerate(lastSession)]
+    [i+1, f'{nameTrunc(name, 45+len(name))} - Episódio {lastSession[name]["lastep"]} [{lastSession[name]["numberOfEpisodesComputed"]}/{lastSession[name]["numberOfEpisodes"]}]', lastSession[name]['date']] if lastSession[name]["lastep"] < max(lastSession[name]['numberOfEpisodes'], lastSession[name]['numberOfEpisodesComputed']) else
+    [i+1, f'{bcolors["green"]}{nameTrunc(name, 45+len(name))} - Completo [{lastSession[name]["numberOfEpisodesComputed"]}/{lastSession[name]["numberOfEpisodes"]}]{bcolors["end"]}', lastSession[name]['date']] for i,name in enumerate(lastSession)]
 
-staticHighlights = [[i, 'green'] for i,name in enumerate(lastSession) if lastSession[name]['lastep'] >= lastSession[name]['numberOfEpisodes']]
-
-# invert the table to the recently watched animes appears at the bottom 
-if len(tableVals) > 1:
-    tableVals.reverse()
-    staticHighlights = [[len(tableVals)-1-i, color] for i, color in staticHighlights]
-
-# Print the interactive Last Session table
-if len(lastSession) and args.name == '':
+# Print the interactive Last Session table and remove the selected items
+if len(lastSession) and args.name == '' and args.yes == False and args.update == False:
     results = [[],[],None]
 
     while len(results[1]) != 1 and results[0] != None:
-        results = interactiveTable(tableVals, ["", "Sessões Anteriores", "Data"], "rcc", behaviour='multiSelectWithText', hintText='Nome do Anime[1]: ', staticHighlights=staticHighlights)
+        results = interactiveTable(tableVals[::-1], ["", "Sessões Anteriores", "Data"], "rcc", behaviour='multiSelectWithText', hintText='Nome do Anime[1]: ', highlightRange=(2,2))
         if results[0] == None: continue
 
-        count = 0
-        for item in tableVals[::-1]:
-            if item[0]==results[0][0]:
-                break
-            count+=1
-
-        posToRemove = [item[0] for item in results[1][1:]]
+        posToRemove = [len(tableVals)-1-item[0] for item in results[1][1:]]
         tableVals = [item for i, item in enumerate(tableVals) if i not in posToRemove]
-        staticHighlights = [item for item in staticHighlights if item[0] not in posToRemove]
-
-
-        leftSide = [item for item in staticHighlights if item[0] < count]
-        rightSide = [item for item in staticHighlights if item[0] > count]
-        staticHighlights = [*leftSide, *[[i-(len(results[1])-1), color] for i,color in rightSide]]
-
 
     posToMaintain = [item[0] for item in tableVals]
     lastSession = {k: lastSession[k] for i,k in enumerate(lastSession) if i+1 in posToMaintain}
@@ -91,8 +86,14 @@ if args.name == '':
     if len(lastSession):
         args.name = '1'
     else:
-        print('Insira um nome válido para continuar\n')
-        exit()
+        try:
+            args.name = str(input('Nome do Anime: '))
+        except KeyboardInterrupt:
+            exit()
+
+        if args.name == '':
+            print('Insira um nome válido para continuar')
+            exit()
 
 #  If users choses one of last session items
 if args.name.isdigit() and int(args.name) <= len(lastSession):
@@ -100,25 +101,33 @@ if args.name.isdigit() and int(args.name) <= len(lastSession):
     slicelist = [str(lastSession[args.name]['lastep']), '']
     args.yes = True
 
-namelist = searchAnime(args.name, engines=['goyabu'])[1]
+if args.update == False:
+    namelist = searchAnime(args.name, engines=['goyabu'])[1]
+else:
+    namelist = []
 
-if len(namelist) == 0:
+if len(namelist) == 0 and args.update == False:
     print(f'\nNenhum anime com o nome "{args.name}" foi encontrado. Tente outro nome.')
     exit()
 
 
 # print a interactive table to choose the anime
-if  args.yes == False:
-    tableVals = [[i+1, namelist[i]] for i in range(len(namelist))]
-    result = interactiveTable(tableVals, ["", "Animes"], "rl")
-    args.name = result[0][1]
+if  args.yes == False and args.update == False:
+    
+    tableValsOrig = [[i+1, namelist[i]] for i in range(len(namelist))]
+    tableVals = [[i+1, nameTrunc(namelist[i], 15+len(namelist[i]))] for i in range(len(namelist))]
+    result = interactiveTable(tableVals, ["", "Animes"], "rl", highlightRange=(2,1))
+    args.name = tableValsOrig[result[0][0]-1][1]
 
 
-#  sys.stdout.write(f"\033[J")
-
-episodes = animeInfo('episodes', query=args.name)['goyabu']
-episodesNames = [name for name,_ in episodes.items()]
-videolist = [link for _,link in episodes.items()]
+if args.update == False:
+    episodes = animeInfo('episodes', query=args.name)['goyabu']
+    episodesNames = [name for name,_ in episodes.items()]
+    videolist = [link for _,link in episodes.items()]
+else: 
+    episodes = []
+    episodesNames = []
+    videolist = []
 
 if not args.silent:
     table = tt.to_string(
@@ -149,7 +158,7 @@ if slicelist == ['']:
 # extract the choosen range from the fetched lists
 count = 1
 slicelist = [int(i) if i.isdigit() else None for i in slicelist]
-if all(slicelist) or slicelist[1] != None:
+if all(slicelist) or slicelist[1] != None and args.update == False:
     count = slicelist[0] if slicelist[0] and count == 1 else count
     videolist = videolist[slice(slicelist[0], slicelist[1]+1 if slicelist[1] else None)]
     episodesNames = episodesNames[slice(slicelist[0], slicelist[1]+1 if slicelist[1] else None)]
@@ -167,6 +176,7 @@ filepath = os.path.join(folderpath, f'{args.name}.m3u')
 
 if not args.silent: print(f'Salvando em "{filepath}"')
 
+# if the destiny folder dont exits, create it
 if not os.path.exists(folderpath):
     try:
         os.makedirs(folderpath)
@@ -174,24 +184,50 @@ if not os.path.exists(folderpath):
         if exc.errno != errno.EEXIST:
             raise
 
-with open(filepath, 'w') as writer:
-    writer.writelines(fileText)
+if args.update == False:
+    with open(filepath, 'w') as writer:
+        writer.writelines(fileText)
 
-newSessionItem = {
-    #  'episodes': [[namelist[i], videolist[i]] for i in range(len(namelist))],
-    'date': datetime.datetime.now().strftime('%d-%m-%y'),
-    'numberOfEpisodes': len(episodesNames),
-    'lastep': 1
-}
+if args.update == False:
+    newSessionItem = {
+        #  'episodes': [[namelist[i], videolist[i]] for i in range(len(namelist))],
+        'date': datetime.now().strftime('%d-%m-%y'),
+        'numberOfEpisodes': len(episodesNames),
+        'numberOfEpisodesComputed': len(episodesNames),
+        'lastep': 1
+    }
+else:
+    newSessionItem = {}
 
-#  args.player = 'mpv'
+def updateList():
+    global lastSession
+    global newSessionItem
+    tmpLastSession = deepcopy(lastSession)
+    for i, key in enumerate(tmpLastSession):
+        episodesNumbers = animeInfo('episodesNum', query=key)
+        numGoyabu = episodesNumbers['goyabu']
+        numAnilist = episodesNumbers['anilist']
+
+        tmpLastSession[key]['numberOfEpisodes'] =  numAnilist
+        tmpLastSession[key]['numberOfEpisodesComputed'] =  numGoyabu
+
+        if args.update == False and key == args.name:
+            newSessionItem['numberOfEpisodes'] =  numAnilist
+            newSessionItem['numberOfEpisodesComputed'] =  numGoyabu
+        # simple progress bar
+        print(f"[{'-'*i}{' '*(len(tmpLastSession)-i)}]    updating the local list", end='\r')
+    lastSession = tmpLastSession
+
+    print('local list updated'+' '*(len(tmpLastSession)+12))
+
 if(args.player == 'mpv'):
+    from python_mpv_jsonipc import MPV
 
     mpv = MPV(ipc_socket="/tmp/mpv-socket")
 
     mpvEpIndex = None # Current anime playing 
 
-    # Update last session file with the current anime
+    # Update last session file with the current anime when the current episode ends
     @mpv.on_event('end-file')
     def end_file_ev(_):
         if mpvEpIndex == None: return
@@ -206,7 +242,7 @@ if(args.player == 'mpv'):
         with open(sessionpath, 'w') as rawjson:
             json.dump(lastSession, rawjson)
 
-    # Update mpvEpIndex with the current episode
+    # Update mpvEpIndex with the current episode every time a new episodes begin
     @mpv.property_observer('media-title')
     def media_title_ob(name, value):
         if type(name) != str or type(value) != str or 'Episódio' not in value: return
@@ -217,16 +253,25 @@ if(args.player == 'mpv'):
     mpv.playlist_pos = 0
     mpv.play(filepath)
     mpv.command('keypress', 'space')
-    time.sleep(2)
+    sleep(2)
     mpv.command('playlist-play-index', slicelist[0]-1 if slicelist[0] else 0)
     mpv.command('keypress', 'space')
-else:
+    updateList()
+elif args.player != 'none':
     os.system(f'{args.player} "{filepath}"')
+elif args.player == 'none' and args.update == False:
+    try:
+        runInParallel((serveRawText, fileText), (updateList,))
+    except KeyboardInterrupt:
+        exit()
 
-for key in lastSession:
-    lastSession[key]['numberOfEpisodes'] = animeInfo('episodesNum', query=key)['anilist'] 
+#  ----------------------
 
+if args.player != 'mpv':
+    if newSessionItem:
+        lastSession[args.name] = newSessionItem
 
-        
+    lastSession = {k: lastSession[k] for k in [args.name]+[item for item in lastSession.keys() if item!=args.name]}
 
-
+    with open(sessionpath, 'w') as rawjson:
+        json.dump(lastSession, rawjson)
