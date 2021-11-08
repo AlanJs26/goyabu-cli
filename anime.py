@@ -221,6 +221,14 @@ def updateList():
 
     print('local list updated'+' '*(len(tmpLastSession)+12))
 
+    if newSessionItem:
+        lastSession[args.name] = newSessionItem
+
+    lastSession = {k: lastSession[k] for k in [args.name]+[item for item in lastSession.keys() if item!=args.name]}
+
+    with open(sessionpath, 'w') as rawjson:
+        json.dump(lastSession, rawjson)
+
 if(args.player == 'mpv'):
     from python_mpv_jsonipc import MPV
 
@@ -268,7 +276,7 @@ elif args.player == 'none' and args.update == False:
 
 #  ----------------------
 
-if args.player != 'mpv':
+if args.player not in  ['mpv', 'none']:
     if newSessionItem:
         lastSession[args.name] = newSessionItem
 
