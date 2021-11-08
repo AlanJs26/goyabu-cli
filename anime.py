@@ -19,9 +19,9 @@ parser.add_argument('-s','--silent', action='store_true',
 parser.add_argument('-y','--yes',    action='store_true',
                     help='use all default options')
 parser.add_argument('--episodes',    action='store', default='',    type=str, metavar='RANGE',
-                    help='range of episodes to watch\nformat:  n   - single episode\n         n:n - range of episodes')
+                    help='range of episodes to watch\n         n    - single episode\n         n:n  - range of episodes')
 parser.add_argument('--player',      action='store', default='mpv', type=str,
-                    help='player to run the anime. The default is mpv')
+    help='player to run the anime\n         mpv  - use MPV player(default)\n         none - run as server\n         xxxx - use any other player, example: mplayer')
 parser.add_argument('--update',      action='store_true',         
                     help='update the local list')
 
