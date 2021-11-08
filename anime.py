@@ -227,7 +227,10 @@ def updateList():
 
     if args.player != 'mpv':
         if newSessionItem:
-            lastSession[args.name] = newSessionItem
+            if args.name in lastSession:
+                lastSession[args.name] = {**lastSession[args.name], **newSessionItem}
+            else:
+                lastSession[args.name] = newSessionItem
 
         lastSession = {k: lastSession[k] for k in [args.name]+[item for item in lastSession.keys() if item!=args.name]}
 
