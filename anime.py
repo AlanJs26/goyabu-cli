@@ -204,19 +204,22 @@ def updateList():
     global lastSession
     global newSessionItem
     tmpLastSession = deepcopy(lastSession)
-    for i, key in enumerate(tmpLastSession):
-        episodesNumbers = animeInfo('episodesNum', query=key)
-        numGoyabu = episodesNumbers['goyabu']
-        numAnilist = episodesNumbers['anilist']
+    try:
+        for i, key in enumerate(tmpLastSession):
+            episodesNumbers = animeInfo('episodesNum', query=key)
+            numGoyabu = episodesNumbers['goyabu']
+            numAnilist = episodesNumbers['anilist']
 
-        tmpLastSession[key]['numberOfEpisodes'] =  numAnilist
-        tmpLastSession[key]['numberOfEpisodesComputed'] =  numGoyabu
+            tmpLastSession[key]['numberOfEpisodes'] =  numAnilist
+            tmpLastSession[key]['numberOfEpisodesComputed'] =  numGoyabu
 
-        if args.update == False and key == args.name:
-            newSessionItem['numberOfEpisodes'] =  numAnilist
-            newSessionItem['numberOfEpisodesComputed'] =  numGoyabu
-        # simple progress bar
-        print(f"[{'-'*i}{' '*(len(tmpLastSession)-i)}]    updating the local list", end='\r')
+            if args.update == False and key == args.name:
+                newSessionItem['numberOfEpisodes'] =  numAnilist
+                newSessionItem['numberOfEpisodesComputed'] =  numGoyabu
+            # simple progress bar
+            print(f"[{'-'*i}{' '*(len(tmpLastSession)-i)}]    updating the local list", end='\r')
+    except KeyboardInterrupt:
+        exit()
     lastSession = tmpLastSession
 
     print('local list updated'+' '*(len(tmpLastSession)+12))
