@@ -10,8 +10,6 @@ infoAlias: Dict[str, Callable] = {
 
 capabilities = {name:info('capabilities') for name, info in infoAlias.items()}
 
-#  searchEnginesAliases: Dict[str, Callable] = {name:info('searchFunc') for name, info in infoAlias.items()}
-
 searchEngines = [key for key, value in capabilities.items() if 'search' in value]
 
 def searchAnime(name:str, engines = searchEngines):

@@ -1,11 +1,10 @@
 import os, errno
-import json
 from datetime import datetime
+import json
 import termtables as tt
 from dropdown import interactiveTable, bcolors
 from time import sleep
 from argparse import RawTextHelpFormatter, ArgumentParser
-from animeScrapper import animeInfo, searchAnime
 from copy import deepcopy
 from rawserver import serveRawText
 from scrappers.utils import runInParallel 
@@ -94,6 +93,8 @@ if args.name == '':
         if args.name == '':
             print('Insira um nome válido para continuar')
             exit()
+
+from animeScrapper import animeInfo, searchAnime
 
 #  If users choses one of last session items
 if args.name.isdigit() and int(args.name) <= len(lastSession):
