@@ -195,8 +195,9 @@ if args.update == False:
         'date': datetime.now().strftime('%d-%m-%y'),
         'numberOfEpisodes': len(episodesNames),
         'numberOfEpisodesComputed': len(episodesNames),
-        'lastep': 1
     }
+    if args.player != 'none':
+        newSessionItem['lastep'] = 1
 else:
     newSessionItem = {}
 
@@ -224,13 +225,14 @@ def updateList():
 
     print('local list updated'+' '*(len(tmpLastSession)+12))
 
-    if newSessionItem:
-        lastSession[args.name] = newSessionItem
+    if args.player != 'mpv':
+        if newSessionItem:
+            lastSession[args.name] = newSessionItem
 
-    lastSession = {k: lastSession[k] for k in [args.name]+[item for item in lastSession.keys() if item!=args.name]}
+        lastSession = {k: lastSession[k] for k in [args.name]+[item for item in lastSession.keys() if item!=args.name]}
 
-    with open(sessionpath, 'w') as rawjson:
-        json.dump(lastSession, rawjson)
+        with open(sessionpath, 'w') as rawjson:
+            json.dump(lastSession, rawjson)
 
 if(args.player == 'mpv'):
     from python_mpv_jsonipc import MPV
@@ -271,19 +273,10 @@ if(args.player == 'mpv'):
     updateList()
 elif args.player != 'none':
     os.system(f'{args.player} "{filepath}"')
+    updateList()
 elif args.player == 'none' and args.update == False:
     try:
         runInParallel((serveRawText, fileText), (updateList,))
     except KeyboardInterrupt:
         exit()
 
-#  ----------------------
-
-if args.player not in  ['mpv', 'none']:
-    if newSessionItem:
-        lastSession[args.name] = newSessionItem
-
-    lastSession = {k: lastSession[k] for k in [args.name]+[item for item in lastSession.keys() if item!=args.name]}
-
-    with open(sessionpath, 'w') as rawjson:
-        json.dump(lastSession, rawjson)
