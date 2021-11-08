@@ -8,7 +8,7 @@ cp ./{animeScrapper,dropdown,anime,rawserver}.py "$HOME/Documentos/animedl"
 cp -r scrappers "$HOME/Documentos/animedl/scrappers"
 echo "$(which python3) '$HOME/Documentos/animedl/anime.py' \$@" > "$HOME/Documentos/animedl/anime.sh"
 sudo chmod u+x "$HOME/Documentos/animedl/anime.sh"
-ln -sf "$HOME/Documentos/animedl/anime.sh" "$HOME/.local/bin/anime"
+sudo ln -sf "$HOME/Documentos/animedl/anime.sh" "$HOME/.local/bin/anime"
 #ln "$HOME/Documentos/animedl/anime.sh" anime
 
 printf "\ngoyabu-cli instalado com sucesso!\n\ndigite 'anime' no terminal para começar"
