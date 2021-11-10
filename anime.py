@@ -73,7 +73,8 @@ for i,name in enumerate(lastSession):
         )
     else:
         tableVals.append(
-[i+1, f'{bcolors["green"]}{nameTrunc(name, 45+len(name))} - Completo [{epsComputed}/{eps}]{bcolors["end"]}', watchDate]
+[i+1, f'{bcolors["green"]}{nameTrunc(name, 40+len(name))} - Completo{bcolors["end"]}', watchDate]
+#  [i+1, f'{bcolors["green"]}{nameTrunc(name, 45+len(name))} - Completo [{epsComputed}/{eps}]{bcolors["end"]}', watchDate]
         )
 
 
