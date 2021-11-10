@@ -57,9 +57,27 @@ def nameTrunc(text, length):
     return text
 
 # Format last session table, highligthing completed animes
-tableVals = [
-    [i+1, f'{nameTrunc(name, 45+len(name))} - Episódio {lastSession[name]["lastep"]} [{lastSession[name]["numberOfEpisodesComputed"]}/{lastSession[name]["numberOfEpisodes"]}]', lastSession[name]['date']] if lastSession[name]["lastep"] < max(lastSession[name]['numberOfEpisodes'], lastSession[name]['numberOfEpisodesComputed']) else
-    [i+1, f'{bcolors["green"]}{nameTrunc(name, 45+len(name))} - Completo [{lastSession[name]["numberOfEpisodesComputed"]}/{lastSession[name]["numberOfEpisodes"]}]{bcolors["end"]}', lastSession[name]['date']] for i,name in enumerate(lastSession)]
+tableVals = []
+for i,name in enumerate(lastSession):
+    eps = lastSession[name]["numberOfEpisodes"]
+    epsComputed = lastSession[name]["numberOfEpisodesComputed"]
+    watchDate = lastSession[name]["date"]
+    lastep = lastSession[name]["lastep"]
+    if lastep == epsComputed and lastep < eps:
+        tableVals.append(
+[i+1, f'{bcolors["grey"]}{nameTrunc(name, 45+len(name))} - Episódio {lastep} [{epsComputed}/{eps}]{bcolors["end"]}', watchDate]
+        )
+    elif lastep < eps:
+        tableVals.append(
+[i+1, f'{nameTrunc(name, 45+len(name))} - Episódio {lastep} [{epsComputed}/{eps}]', watchDate]
+        )
+    else:
+        tableVals.append(
+[i+1, f'{bcolors["green"]}{nameTrunc(name, 45+len(name))} - Completo [{epsComputed}/{eps}]{bcolors["end"]}', watchDate]
+        )
+
+
+
 
 # Print the interactive Last Session table and remove the selected items
 if len(lastSession) and args.name == '' and args.yes == False and args.update == False:
