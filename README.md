@@ -7,7 +7,7 @@
 ![Retomando uma sessão anterior](./img/record2.gif)
 
 <!--digite `anime` e siga as instruções para utilizar.-->
-## How to use
+## 🚀 How to use
 
 Type `anime` in the terminal and enjoy 😊
 
@@ -26,7 +26,7 @@ Type `anime` in the terminal and enjoy 😊
 > -  `-y` accept the default entries
 
 <!--## ⚙ Instalação-->
-## ⚙ Installation
+## 📦 Installation
 
 Requirements:
 - Python 3
@@ -41,7 +41,7 @@ Clone this repository in the program folder and execute the command `bash instal
 Now, type `anime` in the terminal to run the program
 
 <!--## Instalação manual-->
-## 🤓 Manual installation
+## ⚙ Manual installation
 
 Execute `pip install -r requirements.txt`
 
