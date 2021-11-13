@@ -1,6 +1,15 @@
-import tty, sys, termios, os
-import termtables as tt
+import sys, os
 import re
+import termtables as tt
+
+isWindows = sys.platform == 'win32'
+
+filedescriptors = None
+
+if not isWindows:
+    import tty, termios
+else:
+    from msvcrt import getch
 
 bcolors = {
     'header': '\033[95m',
@@ -17,6 +26,44 @@ bcolors = {
 
 def c(color, text):
     return bcolors[color] + text + bcolors['end'] 
+
+def readchr():
+    if isWindows:
+        character = getch()
+        remapList = { 
+            b'\xe0': '[',
+            b'H': 'A',
+            b'P': 'B',
+            b'\x08': '\b',
+        }
+        
+        # for accented characters
+        if character == b'\xc3':
+            character += getch()
+
+        if character in remapList:
+            character = remapList[character]
+
+        if type(character) == str:
+            return character
+        else:
+            # return character
+            return character.decode()
+
+    if filedescriptors == None:
+        filedescriptors = termios.tcgetattr(sys.stdin)
+        tty.setcbreak(sys.stdin)
+        
+    return sys.stdin.read(1)
+
+
+def endRawmode():
+    if isWindows:
+        return
+
+    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, filedescriptors)
+    filedescriptors=None
+
 
 class HighlightedTable:
     def __init__(self, items, header, highlights, alignment="rc", highlightRange=(1,1)):
@@ -86,19 +133,20 @@ def multiselectionTable(key: str, table:HighlightedTable, highlightList: list, h
         highlightPos = len(table.tableLines)
         highlightList[0][0] = len(table.tableLines)
         if ignoredKeys:
-            if ord(key) == 27:
-                key=sys.stdin.read(1)
-                highlightPos = len(table.tableLines) -(1 if key != 'A' else -1)
-                highlightList[0][0] = len(table.tableLines) -(1 if key != 'A' else -1)
-                ignoredKeys=[]
-            elif ord(key) == 127:
+            if key == '[' or ord(key) == 27:
+                key=readchr()
+                if key == 'A':
+                    highlightPos = len(table.tableLines) +(1 if key != 'A' else -1)
+                    highlightList[0][0] = len(table.tableLines) +(1 if key != 'A' else -1)
+                    ignoredKeys=[]
+            elif ord(key) == 127 or key == '\b':
                 appendText = appendText[:-1]
             else: 
                 appendText+=key
         else:
             ignoredKeys = ['j', 'k', '[', 'q']
 
-    if key == "c" or ord(key) == 32:
+    if key == "c" or ord(key) == 32 or key == ' ':
         newHighlighList = [item for item in highlightList[1:] if item[0] != currentPos]
 
         newHighlighList = [currentItem, *newHighlighList]
@@ -112,8 +160,8 @@ def multiselectionTable(key: str, table:HighlightedTable, highlightList: list, h
     return newHighlighList, highlightPos, appendText if ignoredKeys else '', ignoredKeys
 
 def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, clipPos=True, behaviour="single", hintText='Digite: ', staticHighlights=[], highlightRange=(1,1)):
-    filedescriptors = termios.tcgetattr(sys.stdin)
-    tty.setcbreak(sys.stdin)
+    # filedescriptors = termios.tcgetattr(sys.stdin)
+    # tty.setcbreak(sys.stdin)
 
     highlightPos = 0
     ignoredKeys = []
@@ -141,7 +189,9 @@ def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, 
     while True:
 
         try:
-            key=sys.stdin.read(1)
+            key=readchr()
+            # print(key)
+            # continue
         except KeyboardInterrupt:
             print('\n')
             os._exit(0)
@@ -152,7 +202,7 @@ def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, 
             if key == 'q':
                 os._exit(0)
 
-            if key == '\n':
+            if key == '\n' or key == '\r':
                 break
 
             if key == 'j':
@@ -162,7 +212,7 @@ def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, 
                 highlightPos=highlightPos-1 if highlightPos>0 or clipPos==False else highlightPos
 
             if key == '[':
-                key=sys.stdin.read(1)
+                key=readchr()
                 ignoredKeys = []
 
                 #  if key == 'C': # right
@@ -187,7 +237,8 @@ def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, 
 
 
     table.clear()
-    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, filedescriptors)
+    # termios.tcsetattr(sys.stdin, termios.TCSADRAIN, filedescriptors)
+    endRawmode()
     return items[highlightPos] if highlightPos<len(items) else None, highlightList, appendText
 
 if __name__ == "__main__":

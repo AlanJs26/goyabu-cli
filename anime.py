@@ -8,6 +8,7 @@ from argparse import RawTextHelpFormatter, ArgumentParser
 from copy import deepcopy
 from rawserver import serveRawText
 from scrappers.utils import runInParallel 
+from shutil import which
 
 
 parser = ArgumentParser(description='plays anime from terminal', formatter_class=RawTextHelpFormatter)
@@ -256,10 +257,20 @@ def updateList():
         with open(sessionpath, 'w') as rawjson:
             json.dump(lastSession, rawjson)
 
-if(args.player == 'mpv'):
+# Check if mpv is installed
+if which('mpv') == None:
+    args.player = None
+
+if(args.player == None):
+    print('MPV is not installed, please specify an alternative player')
+    exit()
+elif(args.player == 'mpv'):
     from python_mpv_jsonipc import MPV
 
-    mpv = MPV(ipc_socket="/tmp/mpv-socket")
+    if isWindows:
+        mpv = MPV()
+    else:
+        mpv = MPV(ipc_socket="/tmp/mpv-socket")
 
     mpvEpIndex = None # Current anime playing 
 
