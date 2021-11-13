@@ -11,14 +11,14 @@
 
 Type `anime` in the terminal and enjoy 😊
 
-<!-->Parametros:-->
+<!--Parametros:-->
+<!-- -  `--episodes` episódio ou intervalo de episódios-->
+<!-- -  `--player` player a ser utilizado-->
+<!-- -  `--silent` mostrar pouca informação na tela-->
+<!-- -  `--update` atualizar os episódios salvos-->
+<!-- -  `-y` aceite todas as opções padrões-->
 >Arguments:
 >
-<!--> -  `--episodes` episódio ou intervalo de episódios-->
-<!--> -  `--player` player a ser utilizado-->
-<!--> -  `--silent` mostrar pouca informação na tela-->
-<!--> -  `--update` atualizar os episódios salvos-->
-<!--> -  `-y` aceite todas as opções padrões-->
 > -  `--episodes` range of episodes
 > -  `--player` player to watch (default: mpv)
 > -  `--silent` minimal information on screen
@@ -42,8 +42,6 @@ Now, type `anime` in the terminal to run the program
 
 <!--## Instalação manual-->
 ## 🤓 Manual installation
-
-> O programa foi apenas testado no linux, por isso não há garantia que funcione em outros sistemas operacionais.
 
 Execute `pip install -r requirements.txt`
 
