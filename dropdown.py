@@ -27,9 +27,12 @@ bcolors = {
 def c(color, text):
     return bcolors[color] + text + bcolors['end'] 
 
-def readchr():
+def readchr(readNum=1):
+    global filedescriptors
     if isWindows:
-        character = getch()
+        character = ''
+        for _ in range(readNum):
+            character += getch()
         remapList = { 
             b'\xe0': '[',
             b'H': 'A',
@@ -42,7 +45,8 @@ def readchr():
             character += getch()
 
         if character in remapList:
-            character = remapList[character]
+            for i in range(character):
+                character[i] = remapList[character[i]]
 
         if type(character) == str:
             return character
@@ -54,10 +58,11 @@ def readchr():
         filedescriptors = termios.tcgetattr(sys.stdin)
         tty.setcbreak(sys.stdin)
         
-    return sys.stdin.read(1)
+    return sys.stdin.read(readNum)
 
 
 def endRawmode():
+    global filedescriptors
     if isWindows:
         return
 
@@ -133,12 +138,17 @@ def multiselectionTable(key: str, table:HighlightedTable, highlightList: list, h
         highlightPos = len(table.tableLines)
         highlightList[0][0] = len(table.tableLines)
         if ignoredKeys:
-            if key == '[' or ord(key) == 27:
-                key=readchr()
-                if key == 'A':
-                    highlightPos = len(table.tableLines) +(1 if key != 'A' else -1)
-                    highlightList[0][0] = len(table.tableLines) +(1 if key != 'A' else -1)
+            if ord(key) == 9:
+                highlightPos = len(table.tableLines) -1
+                highlightList[0][0] = len(table.tableLines) -1
+                ignoredKeys=[]
+            elif (key == '[' if isWindows else ord(key) == 27):
+                key=readchr(1) if isWindows else readchr(2) 
+                if key == '[A' or key == 'A':
+                    highlightPos = len(table.tableLines) -1
+                    highlightList[0][0] = len(table.tableLines) -1
                     ignoredKeys=[]
+                key = key[0]
             elif ord(key) == 127 or key == '\b':
                 appendText = appendText[:-1]
             else: 

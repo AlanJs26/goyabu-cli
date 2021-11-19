@@ -307,9 +307,12 @@ elif(args.player == 'mpv'):
 elif args.player != 'none':
     os.system(f'{args.player} "{filepath}"')
     updateList()
-elif args.player == 'none' and args.update == False:
+elif args.player == 'none':
     try:
-        runInParallel((serveRawText, fileText), (updateList,))
+        if args.update == False:
+            runInParallel((serveRawText, fileText), (updateList,))
+        else:
+            updateList()
     except KeyboardInterrupt:
         exit()
 
