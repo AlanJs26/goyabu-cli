@@ -1,6 +1,8 @@
 from anilist import Client
 from typing import Callable, Dict, List, Optional, Union, overload
 from scrappers.utils import infoDecorator
+#  from utils import infoDecorator
+#  from rich import print
 
 possibleOutputs = [
     'search',
@@ -63,7 +65,11 @@ def anilistInfo(*type:str, query:Optional[str]=None) -> Union[Dict[str, Dict[str
     return outputs
 
 if __name__ == "__main__":
-    print(anilistInfo('episodesNum', query='boku'))
+    #  print(anilistInfo('episodesNum', query='boku'))
+
     #  anime = anilistClient.get_anime(21234)
+    result = anilistClient.get('AlanJS', content_type='list')
+    for item in result[0]:
+        print(f"{item.media.title.romaji} - {item.status}")
     #  print(anime.)
     #  print(dir(anilist))

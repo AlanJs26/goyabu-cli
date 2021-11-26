@@ -2,7 +2,7 @@ import os, errno
 from datetime import datetime
 import json
 import termtables as tt
-from dropdown import interactiveTable, bcolors
+from dropdown import interactiveTable, bcolors, isWindows
 from time import sleep
 from argparse import RawTextHelpFormatter, ArgumentParser
 from copy import deepcopy
