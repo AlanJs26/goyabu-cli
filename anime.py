@@ -10,6 +10,13 @@ from rawserver import serveRawText
 from scrappers.utils import runInParallel 
 from shutil import which
 
+def dir_path(string):
+    if string == '': return ''
+    new_string = os.path.expanduser(string)
+    if os.path.isdir(new_string):
+        return new_string
+    else:
+        raise NotADirectoryError(string)
 
 parser = ArgumentParser(description='plays anime from terminal', formatter_class=RawTextHelpFormatter)
 
@@ -25,6 +32,8 @@ parser.add_argument('--player',      action='store', default='mpv', type=str,
     help='player to run the anime\n         mpv  - use MPV player(default)\n         none - run as server\n         xxxx - use any other player, example: mplayer')
 parser.add_argument('--update',      action='store_true',         
                     help='update the local list')
+parser.add_argument('--config-dir',    action='store', default='',    type=dir_path, metavar='config directory',
+                    help='directory for the watch list')
 
 args = parser.parse_args()
 
@@ -40,9 +49,13 @@ if args.episodes:
     slicelist = args.episodes.split(':')
     slicelist.append('')
 
+
 # read last session file, if don't exist create one
 lastSession={}
-sessionpath = os.path.join(os.path.dirname(__file__), '.anime-lastsession.json')
+if args.config_dir != '':
+    sessionpath = args.config_dir + ('/' if args.config_dir[-1] != '/' else '') + '.anime-lastsession.json'
+else:
+    sessionpath = os.path.join(os.path.dirname(__file__), '.anime-lastsession.json')
 if os.path.isfile(sessionpath):
     with open(sessionpath) as rawjson:
         lastSession = json.load(rawjson)
@@ -56,6 +69,10 @@ def nameTrunc(text, length):
         nameSlice = slice(None, len(text)-(length-columns))
         return text[nameSlice]+'...'
     return text
+
+if len(lastSession) == 0 and args.update:
+    print('the watch list if empty. Watch a episode first.')
+    exit()
 
 # Format last session table, highligthing completed animes
 tableVals = []
