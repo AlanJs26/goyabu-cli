@@ -6,6 +6,7 @@ pip3 install -r ./requirements.txt
 mkdir -p "$HOME/Documentos/animedl"
 cp ./{animeScrapper,dropdown,anime,rawserver}.py "$HOME/Documentos/animedl"
 cp -r scrappers "$HOME/Documentos/animedl/scrappers"
+cp "./scrappers/*" "$HOME/Documentos/animedl/scrappers/*"
 echo "$(which python3) '$HOME/Documentos/animedl/anime.py' \$@" > "$HOME/Documentos/animedl/anime.sh"
 sudo chmod u+x "$HOME/Documentos/animedl/anime.sh"
 sudo ln -sf "$HOME/Documentos/animedl/anime.sh" "$HOME/.local/bin/anime"
