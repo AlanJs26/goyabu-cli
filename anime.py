@@ -43,11 +43,11 @@ if args.update == True:
     args.silent = True
 
 
-slicelist = ['']
+slicelist = ['', '']
 
 if args.episodes:
     slicelist = args.episodes.split(':')
-    slicelist.append('')
+    if len(slicelist) == 1: slicelist.append('')
 
 
 # read last session file, if don't exist create one
@@ -136,8 +136,9 @@ from animeScrapper import animeInfo, searchAnime
 #  If users choses one of last session items
 if args.name.isdigit() and int(args.name) <= len(lastSession):
     args.name = list(lastSession.keys())[int(args.name)-1]
-    slicelist = [str(lastSession[args.name]['lastep']), '']
     args.yes = True
+    if args.episodes == '':
+        slicelist = [str(lastSession[args.name]['lastep']), '']
 
 if args.update == False:
     namelist = searchAnime(args.name, engines=['goyabu'])[1]
@@ -169,7 +170,7 @@ else:
 
 if not args.silent:
     table = tt.to_string(
-        [[i+1, episodesNames[i]] for i in range(len(episodesNames))],
+        [[i+1, nameTrunc(episodesNames[i], len(episodesNames[i])+15)] for i in range(len(episodesNames))],
         header=["","Episódios"],
         style=tt.styles.rounded,
         alignment="rl",
@@ -196,16 +197,17 @@ if slicelist == ['']:
 # extract the choosen range from the fetched lists
 count = 1
 slicelist = [int(i) if i.isdigit() else None for i in slicelist]
-if all(slicelist) or slicelist[1] != None and args.update == False:
-    count = slicelist[0] if slicelist[0] and count == 1 else count
-    videolist = videolist[slice(slicelist[0], slicelist[1]+1 if slicelist[1] else None)]
+if any(slicelist) and args.episodes and args.update == False:
+    count = slicelist[0] or count
+
+    videolist     =     videolist[slice(slicelist[0], slicelist[1]+1 if slicelist[1] else None)]
     episodesNames = episodesNames[slice(slicelist[0], slicelist[1]+1 if slicelist[1] else None)]
 
 
 # create the playlist file for the player
 fileText = '#EXTM3U\n\n'
 for video in videolist:
-    fileText+=f'#EXTINF:-1,Episódio {count}\n'
+    fileText+=f'#EXTINF:-1,Ep {count} - {args.name}\n'
     fileText+=f'{video}\n\n'
     count=count+1
 
@@ -309,18 +311,19 @@ elif(args.player == 'mpv'):
     # Update mpvEpIndex with the current episode every time a new episodes begin
     @mpv.property_observer('media-title')
     def media_title_ob(name, value):
-        if type(name) != str or type(value) != str or 'Episódio' not in value: return
+        if type(name) != str or type(value) != str or 'Ep ' not in value: return
         global mpvEpIndex
-        mpvEpIndex = int(value.replace('Episódio ', ''))
+        mpvEpIndex = int(value.split('-')[0].replace('Ep ', ''))
+
 
     # -----
     mpv.playlist_pos = 0
     mpv.play(filepath)
     mpv.command('keypress', 'space')
     sleep(2)
-    mpv.command('playlist-play-index', slicelist[0]-1 if slicelist[0] else 0)
+    mpv.command('playlist-play-index', slicelist[0]-1 if slicelist[0] and args.episodes == '' else 0)
     mpv.command('keypress', 'space')
-    updateList()
+    #  updateList()
 elif args.player != 'none':
     os.system(f'{args.player} "{filepath}"')
     updateList()

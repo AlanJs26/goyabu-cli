@@ -110,16 +110,18 @@ def goyabuEpisodes(name:str) -> Dict[str, str]:
     ep_idlist = [href[26:-1] for href in ep_hreflist]
     ep_namelist = [name.text for name in eplist.find_all('h3')]
     videolist = ['' for _ in range(len(ep_idlist))]
+    # (?<=<source).+?src='(.+[^'])(?=' )
+    # (?<=p",file: ").+?(?="[\n\,]?)
+    # (?<=<source).+?src='(.*?)(?='\s+?/>)
 
     def getvideourl(url, id):
         html=requests.get(url).text 
-        allmatches = re.findall(r"(?<=<source).+?src='(.*?)(?='\s+?/>)", html)
-        morematches = re.findall(r"file: \"(.+?)\"}", html)
-        allmatches = allmatches+morematches
+        allmatches = re.findall(r'(?<=p",file: ").+?(?="[\n\,]?)', html)
 
-        allmatches = [match for match in allmatches if match != '']
+        allmatches = list(filter(bool, allmatches))
         if len(allmatches) == 0:
             return 
+
         videolist[id] = allmatches[-1]
 
     with tqdm(total=len(ep_idlist)) as pbar:
