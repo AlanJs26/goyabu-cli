@@ -2,10 +2,12 @@
 from typing import Callable, Dict, List, Optional
 from scrappers.goyabu import goyabuInfo
 from scrappers.aniList import anilistInfo
+from scrappers.vizer import vizerInfo
 
 infoAlias: Dict[str, Callable] = {
     'goyabu': goyabuInfo,
     'anilist': anilistInfo,
+    'vizer': vizerInfo,
 }
 
 capabilities = {name:info('capabilities') for name, info in infoAlias.items()}
@@ -52,7 +54,7 @@ def animeInfo(*types:str, query:Optional[str]=None, engines = searchEngines):
 if __name__ == "__main__":
     #  print(searchAnime('boku'))
     #  print(infoAlias['goyabu']('episodes', query='komi'))
-    print(animeInfo('episodesNum', query='boku', engines=['anilist']))
+    print(animeInfo('search', query='venom'))
     #  print(searchAnime('asdffsa'))
 
     #  print(searchEngines)

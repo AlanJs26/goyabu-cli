@@ -17,7 +17,6 @@ possibleOutputs = [
     'description',
     'status',
     'cover',
-    'capabilities'
 ]
 
 def goyabuSearch(name:str) -> List[str]:
@@ -168,9 +167,6 @@ def goyabuInfo(*type:str, query:Optional[str]=None) -> Union[Dict[str, Dict[str,
 
     if 'episodesNum' in type and query:
         outputs['episodesNum'] = goyabuEpisodesNum(query)
-
-    if 'capabilities' in type:
-        outputs['capabilities'] = possibleOutputs
 
     if 'search' in type and query:
         outputs['search'] = goyabuSearch(query)

@@ -8,7 +8,6 @@ possibleOutputs = [
     'search',
     'episodesNum',
     'status',
-    'capabilities'
 ]
 
 anilistClient = Client()
@@ -17,9 +16,6 @@ anilistClient = Client()
 def anilistInfo(*type:str, query:Optional[str]=None) -> Union[Dict[str, Dict[str, str]], List[str]]:
 
     outputs = {}
-
-    if 'capabilities' in type:
-        outputs['capabilities'] = possibleOutputs
 
     if 'search' in type and query:
         rawSearch = anilistClient.search_anime(query, 10)

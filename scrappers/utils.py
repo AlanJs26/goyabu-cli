@@ -27,13 +27,18 @@ def infoDecorator(outputs):
     def real_decorator(function):
         @wraps(function)
         def wrapper(*args, **kwargs):
-            difference = list(set(args).difference(outputs))
+            possibleOutputs = [*outputs, 'capabilities']
+
+            difference = list(set(args).difference(possibleOutputs))
             if len(difference) > 1:
                 raise SystemExit(f"'{' and '.join(difference)}' are not valid outputs")
             elif len(difference):
                 raise SystemExit(f"'{difference[0]}' is not a valid output")
 
             result = function(*args, **kwargs)
+
+            if 'capabilities' in args:
+                result['capabilities'] = possibleOutputs
 
             return result if len(result)>1 else list(result.items())[0][1]
         return wrapper

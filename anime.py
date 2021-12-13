@@ -141,7 +141,12 @@ if args.name.isdigit() and int(args.name) <= len(lastSession):
         slicelist = [str(lastSession[args.name]['lastep']), '']
 
 if args.update == False:
-    namelist = searchAnime(args.name, engines=['goyabu'])[1]
+    rawnamelist = searchAnime(args.name, engines=['goyabu', 'vizer'])[0]
+    namelist = []
+    for engine in rawnamelist:
+        for item in rawnamelist[engine]:
+            namelist.append([item, engine])
+
 else:
     namelist = []
 
@@ -149,18 +154,20 @@ if len(namelist) == 0 and args.update == False:
     print(f'\nNenhum anime com o nome "{args.name}" foi encontrado. Tente outro nome.')
     exit()
 
-
+chosenEngine = 'goyabu'
 # print a interactive table to choose the anime
 if  args.yes == False and args.update == False:
     
-    tableValsOrig = [[i+1, namelist[i]] for i in range(len(namelist))]
-    tableVals = [[i+1, nameTrunc(namelist[i], 15+len(namelist[i]))] for i in range(len(namelist))]
-    result = interactiveTable(tableVals, ["", "Animes"], "rl", highlightRange=(2,1))
+    tableValsOrig = [[i+1, namelist[i][0], namelist[i][1]] for i in range(len(namelist))]
+    tableVals = [[i+1, nameTrunc(namelist[i][0], 15+len(namelist[i][0])), namelist[i][1]] for i in range(len(namelist))]
+    result = interactiveTable(tableVals, ["", "Animes", "engine"], "rll", highlightRange=(2,2))
     args.name = tableValsOrig[result[0][0]-1][1]
+    chosenEngine = result[0][-1]
 
 
 if args.update == False:
-    episodes = animeInfo('episodes', query=args.name)['goyabu']
+    #  episodes = animeInfo('episodes', query=args.name)['goyabu', 'vizer']
+    episodes = animeInfo('episodes', query=args.name, engines=[chosenEngine])[chosenEngine]
     episodesNames = [name for name,_ in episodes.items()]
     videolist = [link for _,link in episodes.items()]
 else: 
