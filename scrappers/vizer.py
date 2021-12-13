@@ -27,11 +27,19 @@ def vizerMovie(watchId:str) -> str:
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
 
     r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"watchMovie": watchId}, headers=headers)
-    playid = r.json()['list']["0"]['id']
+    idlanglist = r.json()['list']
+    playid = "0"
+    for index in idlanglist:
+        playid = idlanglist[index]['id']
+        if idlanglist[index]['lang'] == "Dublado":
+            break
+
+
+    #  playid = r.json()['list']["0"]['id']
 
     r = requests.get(url=f"https://vizer.tv/embed/getPlay.php?id={playid}&sv=fembed", headers=headers)
     nexthref = re.search(r'(?<=window\.location\.href=\").+?(?=\";)', r.text)[0]
-    newId = re.search(r'(?<=v\/).+?(?=#)', nexthref)[0]
+    newId = re.search(r'(?<=v\/).+?(?=#|$)', nexthref)[0]
 
     r = requests.post(url=f"https://diasfem.com/api/source/{newId}")
     finalUrl = r.json()['data'][-1]['file']
