@@ -44,6 +44,7 @@ if args.update == True:
 
 
 slicelist = ['', '']
+chosenEngine = 'goyabu'
 
 if args.episodes:
     slicelist = args.episodes.split(':')
@@ -137,6 +138,7 @@ from animeScrapper import animeInfo, searchAnime
 if args.name.isdigit() and int(args.name) <= len(lastSession):
     args.name = list(lastSession.keys())[int(args.name)-1]
     args.yes = True
+    chosenEngine = lastSession[args.name]['engine']
     if args.episodes == '':
         slicelist = [str(lastSession[args.name]['lastep']), '']
 
@@ -154,7 +156,6 @@ if len(namelist) == 0 and args.update == False:
     print(f'\nNenhum anime com o nome "{args.name}" foi encontrado. Tente outro nome.')
     exit()
 
-chosenEngine = 'goyabu'
 # print a interactive table to choose the anime
 if  args.yes == False and args.update == False:
     
@@ -259,9 +260,11 @@ def updateList():
 
             tmpLastSession[key]['numberOfEpisodes'] =  numAnilist
             tmpLastSession[key]['numberOfEpisodesComputed'] =  numGoyabu
+            tmpLastSession[key]['engine'] = chosenEngine
 
             if args.update == False and key == args.name:
                 newSessionItem['numberOfEpisodes'] =  numAnilist
+                newSessionItem['engine'] = chosenEngine
                 newSessionItem['numberOfEpisodesComputed'] =  numGoyabu
             # simple progress bar
             print(f"[{'-'*i}{' '*(len(tmpLastSession)-i)}]    updating the local list", end='\r')
@@ -308,6 +311,7 @@ elif(args.player == 'mpv'):
         global lastSession
 
         newSessionItem['lastep'] = mpvEpIndex
+        newSessionItem['engine'] = chosenEngine
         lastSession[args.name] = newSessionItem
 
         lastSession = {k: lastSession[k] for k in [args.name]+[item for item in lastSession.keys() if item!=args.name]}
