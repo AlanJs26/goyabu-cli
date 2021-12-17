@@ -260,12 +260,11 @@ def updateList():
 
             tmpLastSession[key]['numberOfEpisodes'] =  numAnilist
             tmpLastSession[key]['numberOfEpisodesComputed'] =  numGoyabu
-            tmpLastSession[key]['engine'] = chosenEngine
 
             if args.update == False and key == args.name:
                 newSessionItem['numberOfEpisodes'] =  numAnilist
-                newSessionItem['engine'] = chosenEngine
                 newSessionItem['numberOfEpisodesComputed'] =  numGoyabu
+                newSessionItem['engine'] =  chosenEngine
             # simple progress bar
             print(f"[{'-'*i}{' '*(len(tmpLastSession)-i)}]    updating the local list", end='\r')
     except KeyboardInterrupt:

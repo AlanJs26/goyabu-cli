@@ -23,6 +23,8 @@ from multiprocessing import Process
     #  return aux
 
 
+
+
 def infoDecorator(outputs):
     def real_decorator(function):
         @wraps(function)

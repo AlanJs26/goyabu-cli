@@ -17,7 +17,8 @@ possibleOutputs = [
 ]
 
 
-wasBlocked = False
+wasBlocked = {}
+count = 0
 
 def vizerSearch(name:str) -> List[str]:
     html = requests.get(f'https://vizer.tv/pesquisar/{" ".join(name.split(" "))}').text
@@ -53,14 +54,14 @@ def vizerMovie(watchId:str) -> str:
     print(nexthref)
     newId = re.search(r'(?<=v\/).+?(?=#|$)', nexthref)[0]
 
-    r = requests.post(url=f"https://diasfem.com/api/source/{newId}")
+    r = requests.post(url=f"http://diasfem.com/api/source/{newId}")
     finalUrl = r.json()['data'][-1]['file']
 
     return finalUrl
 
 
 def vizerSeries(watchId:str) -> Dict[str, str]:
-    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Cafari/537.36'}
 
     r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"getSeasons": watchId}, headers=headers)
     rawResult = r.json()['list']
@@ -85,35 +86,47 @@ def vizerSeries(watchId:str) -> Dict[str, str]:
     
     def getvideourl(episode, index):
         global wasBlocked
+        global count
+
+        episodeId, episodeName = episode
+
+        r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"getEpisodeLanguages": episodeId}, headers=headers)
+        languages = [(item['id'], item['lang']) for item in r.json()['list'].values()] 
+
+        r = requests.get(url=f"https://vizer.tv/embed/getPlay.php?id={languages[-1][0]}&sv=fembed", headers=headers)
+        nexthref = re.search(r'(?<=window\.location\.href=\").+?(?=\";)', r.text)[0]
+        newId = re.search(r'(?<=v\/).+?(?=#|$)', nexthref)[0]
 
         while True:
-            while wasBlocked == True:
-                sleep(5)
-
-            try:
-                episodeId, episodeName = episode
-
-                r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"getEpisodeLanguages": episodeId}, headers=headers)
-                languages = [(item['id'], item['lang']) for item in r.json()['list'].values()] 
-
-
-                r = requests.get(url=f"https://vizer.tv/embed/getPlay.php?id={languages[-1][0]}&sv=fembed", headers=headers)
-                #  print(r.text)
-                nexthref = re.search(r'(?<=window\.location\.href=\").+?(?=\";)', r.text)[0]
-                newId = re.search(r'(?<=v\/).+?(?=#|$)', nexthref)[0]
-
-                r = requests.post(url=f"https://diasfem.com/api/source/{newId}")
-                finalUrls[index] = (episodeName, r.json()['data'][-1]['file'])
-                break
-            except Exception:
-                print('blocked')
-                wasBlocked = True
+            while any(wasBlocked.values()):
+                print(index)
                 sleep(2)
-                wasBlocked = False
+
+            count += 1
+            sleep(count)
+
+            if count > 5:
+                count = 0
+                wasBlocked[index] = True
+                sleep(5)
+                wasBlocked[index] = False
+
+            r = ''
+            try:
+                r = requests.post(url=f"https://diasfem.com/api/source/{newId}", headers=headers)
+                finalUrls[index] = (episodeName, r.json()['data'][-1]['file'])
+
+                break
+            except Exception as e:
+                print(e)
+                print(r.reason)
+                wasBlocked[index] = True
+                sleep(5)
+                wasBlocked[index] = False
 
 
     with tqdm(total=len(episodesBySeason)) as pbar:
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=4) as executor:
             futures = [executor.submit(getvideourl, episode, index) for index, episode in enumerate(episodesBySeason)]
             for _ in as_completed(futures):
                 pbar.update(1)
