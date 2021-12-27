@@ -1,14 +1,16 @@
 #!/usr/bin/env bash 
 
+install_path="$HOME/.animedl"
+
 sudo apt install python3 mpv python3-pip
 pip3 install -r ./requirements.txt
 
-mkdir -p "$HOME/Documentos/animedl"
-cp ./{animeScrapper,dropdown,anime,rawserver}.py "$HOME/Documentos/animedl"
-cp -r scrappers "$HOME/Documentos/animedl/scrappers"
-cp "./scrappers/*" "$HOME/Documentos/animedl/scrappers/*"
-echo "$(which python3) '$HOME/Documentos/animedl/anime.py' \$@" > "$HOME/Documentos/animedl/anime.sh"
-sudo chmod u+x "$HOME/Documentos/animedl/anime.sh"
-sudo ln -sf "$HOME/Documentos/animedl/anime.sh" "$HOME/.local/bin/anime"
+mkdir -p $install_path
+cp ./{animeScrapper,dropdown,anime,rawserver}.py $install_path
+cp -r scrappers "$install_path/scrappers"
+cp "$install_path/scrappers/*" "$install_path/scrappers/*"
+echo "$(which python3) '$install_path/anime.py' \$@" > "$install_path/anime.sh"
+sudo chmod u+x "$install_path/anime.sh"
+sudo ln -sf "$install_path/anime.sh" "$HOME/.local/bin/anime"
 
 printf "\ngoyabu-cli instalado com sucesso!\n\ndigite \033[92m'anime'\033[0m no terminal para começar\n"

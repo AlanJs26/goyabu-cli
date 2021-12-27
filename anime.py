@@ -240,11 +240,11 @@ if args.update == False:
     newSessionItem = {
         #  'episodes': [[namelist[i], videolist[i]] for i in range(len(namelist))],
         'date': datetime.now().strftime('%d-%m-%y'),
-        'numberOfEpisodes': len(episodesNames),
         'numberOfEpisodesComputed': len(episodesNames),
         'engine': chosenEngine,
     }
-    if args.player not in lastSession:
+    if args.name not in lastSession:
+        newSessionItem['numberOfEpisodes'] = len(episodesNames)
         newSessionItem['lastep'] = 1
 else:
     newSessionItem = {}
@@ -311,7 +311,11 @@ elif(args.player == 'mpv'):
 
         newSessionItem['lastep'] = mpvEpIndex
         newSessionItem['engine'] = chosenEngine
-        lastSession[args.name] = newSessionItem
+
+        if args.name in lastSession:
+            lastSession[args.name] = {**lastSession[args.name],**newSessionItem}
+        else:
+            lastSession[args.name] = newSessionItem
 
         lastSession = {k: lastSession[k] for k in [args.name]+[item for item in lastSession.keys() if item!=args.name]}
 
