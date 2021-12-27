@@ -17,7 +17,7 @@ Type `anime` in the terminal and enjoy 😊
 <!-- -  `--silent` mostrar pouca informação na tela-->
 <!-- -  `--update` atualizar os episódios salvos-->
 <!-- -  `-y` aceite todas as opções padrões-->
->Arguments:
+> Arguments:
 >
 > -  `--episodes` range of episodes
 > -  `--player` player to watch (default: mpv)
@@ -34,16 +34,31 @@ Requirements:
 
 <!--Clone este repositório e, na pasta do programa, execute o comando `bash install.sh`-->
 
-Clone this repository in the program folder and execute the command `bash install.sh`
+Clone this repository and run the install script
+
+`git clone 'https://github.com/AlanJs26/goyabu-cli' && cd goyabu-cli && ./install.sh`
 
 <!--Com isso digitando `anime` no terminal, o programa deve funcionar-->
 
-Now, type `anime` in the terminal to run the program
+To run the program type `anime` in the terminal
 
 <!--## Instalação manual-->
 ## ⚙ Manual installation
 
-Execute `pip install -r requirements.txt`
+Clone this repository `git clone 'https://github.com/AlanJs26/goyabu-cli' && cd goyabu-cli` 
+
+Install all pythons dependencies `pip install -r requirements.txt`
 
 <!--Assim o programa pode ser executado com `python anime.py` -->
-To run, type `python anime.py` in the program folder
+To run the program, type `python anime.py` in the program folder or add to system path
+
+## ⚠️ Warning
+
+Currently all animes are being downloaded from Goyabu, so all subtitles are in **Portuguese**  
+
+I have plans to add **English** support along with TV shows and movies, but this will take a while  
+
+
+
+
+
