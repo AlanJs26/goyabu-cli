@@ -90,12 +90,7 @@ def vizerSeries(watchId:str) -> Dict[str, str]:
 
         episodeId, episodeName = episode
 
-        r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"getEpisodeLanguages": episodeId}, headers=headers)
-        languages = [(item['id'], item['lang']) for item in r.json()['list'].values()] 
-
-        r = requests.get(url=f"https://vizer.tv/embed/getPlay.php?id={languages[-1][0]}&sv=fembed", headers=headers)
-        nexthref = re.search(r'(?<=window\.location\.href=\").+?(?=\";)', r.text)[0]
-        newId = re.search(r'(?<=v\/).+?(?=#|$)', nexthref)[0]
+        okcount = 0
 
         while True:
             while any(wasBlocked.values()):
@@ -113,16 +108,29 @@ def vizerSeries(watchId:str) -> Dict[str, str]:
 
             r = ''
             try:
+                r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"getEpisodeLanguages": episodeId}, headers=headers)
+                languages = [(item['id'], item['lang']) for item in r.json()['list'].values()] 
+
+                r = requests.get(url=f"https://vizer.tv/embed/getPlay.php?id={languages[-1][0]}&sv=fembed", headers=headers)
+                nexthref = re.search(r'(?<=window\.location\.href=\").+?(?=\";)', r.text)[0]
+                newId = re.search(r'(?<=v\/).+?(?=#|$)', nexthref)[0]
+
                 r = requests.post(url=f"https://diasfem.com/api/source/{newId}", headers=headers)
                 finalUrls[index] = (episodeName, r.json()['data'][-1]['file'])
 
                 break
             except Exception as e:
-                print(e)
-                print(r.reason)
-                wasBlocked[index] = True
-                sleep(5)
-                wasBlocked[index] = False
+                #  print(e)
+                print(f'{r.reason} - {index}')
+                if 'Many' in r.reason:
+                    wasBlocked[index] = True
+                    sleep(5)
+                    wasBlocked[index] = False
+                elif 'OK' in r.reason:
+                    okcount+=1
+                    if okcount >=5:
+                        finalUrls[index] = (episodeName, 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4')
+                        break
 
 
     with tqdm(total=len(episodesBySeason)) as pbar:

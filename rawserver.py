@@ -46,3 +46,10 @@ def serveRawText(text:str):
         my_server.serve_forever()
     except KeyboardInterrupt:
         exit()
+
+if __name__ == "__main__":
+    import sys
+    arg = sys.argv[-1]
+
+    with open(arg) as text:
+        serveRawText(text.read())

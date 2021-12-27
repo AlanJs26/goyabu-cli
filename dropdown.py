@@ -1,6 +1,7 @@
 import sys, os
 import re
 import termtables as tt
+from math import floor
 
 isWindows = sys.platform == 'win32'
 
@@ -71,7 +72,7 @@ def endRawmode():
 
 
 class HighlightedTable:
-    def __init__(self, items, header, highlights, alignment="rc", highlightRange=(1,1)):
+    def __init__(self, items, header, highlights, alignment="rc", highlightRange=(1,1), maxListSize=5):
         table = tt.to_string(
             items,
             header=header,
@@ -85,14 +86,31 @@ class HighlightedTable:
         self.tableFooter = table.split('\n')[-1]
         self.highlights = highlights
         self.highlightRange = highlightRange
+        self.maxListSize = maxListSize
 
-    def update(self, highlights=None, upOffset=0):
+    def update(self, highlights=None, upOffset=0, scrollAmount=0):
         if(highlights == None): highlights=self.highlights
+
+        if self.maxListSize > len(self.tableLines):
+            self.maxListSize = len(self.tableLines)
+
+        maxScrollAmount = len(self.tableLines)-self.maxListSize
+        if scrollAmount > maxScrollAmount:
+            scrollAmount = maxScrollAmount
+
 
         highlightPos = -1
 
-        print(self.tableHeader)
-        for i, line in enumerate(self.tableLines):
+        scrollSlice = slice(scrollAmount, scrollAmount+self.maxListSize)
+
+        if scrollAmount > 0:
+            lastOccurrence = self.tableHeader.rfind('┼')
+            print(self.tableHeader[:lastOccurrence-1]+' ↑ '+self.tableHeader[lastOccurrence+2:])
+        else:
+            print(self.tableHeader)
+
+        for index, line in enumerate(self.tableLines[scrollSlice]):
+            i = index+scrollAmount
             highlightColor = ''
 
             for highlight in highlights:
@@ -109,16 +127,22 @@ class HighlightedTable:
                 else:
                     line = re.sub(r"((.*?│.*?){"+str(f1)+r"})(\b.+\b\S?)((.*?│.*?){"+str(f2)+r"})", r"\1{}\3{}\4".format(highlightColor, bcolors['end']), line)
             print(line)
-        print(self.tableFooter)
+
+        if scrollAmount+self.maxListSize < len(self.tableLines):
+            lastOccurrence = self.tableFooter.rfind('┴')
+            print(self.tableFooter[:lastOccurrence-1]+' ↓ '+self.tableFooter[lastOccurrence+2:])
+        else:
+            print(self.tableFooter)
 
 
-        self.cursorToBeginning(upOffset)
+
+        self.cursorToBeginning(0)
 
     def cursorToEnd(self, downOffset=0):
-        sys.stdout.write(f"\033[{len(self.tableLines)+4+downOffset}E")
+        sys.stdout.write(f"\033[{self.maxListSize+4+downOffset}E")
 
     def cursorToBeginning(self, upOffset=0):
-        sys.stdout.write(f"\033[{len(self.tableLines)+4+upOffset}F")
+        sys.stdout.write(f"\033[{self.maxListSize+4+upOffset}F")
         sys.stdout.write("\r")
 
     def clear(self):
@@ -169,7 +193,7 @@ def multiselectionTable(key: str, table:HighlightedTable, highlightList: list, h
 
     return newHighlighList, highlightPos, appendText if ignoredKeys else '', ignoredKeys
 
-def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, clipPos=True, behaviour="single", hintText='Digite: ', staticHighlights=[], highlightRange=(1,1)):
+def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, clipPos=True, behaviour="single", hintText='Digite: ', maxListSize=5,  staticHighlights=[], highlightRange=(1,1)):
     # filedescriptors = termios.tcgetattr(sys.stdin)
     # tty.setcbreak(sys.stdin)
 
@@ -188,9 +212,10 @@ def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, 
 
     highlightList = [[highlightPos, 'underline', 'bold']]
 
-    table = HighlightedTable(items, header, highlightList, alignment, highlightRange=highlightRange)
-    table.update([*staticHighlights,*highlightList])
-    table.cursorToEnd(-1 if 'WithText' in behaviour else 0)
+    table = HighlightedTable(items, header, highlightList, alignment, highlightRange=highlightRange, maxListSize=maxListSize)
+    table.update([*staticHighlights,*highlightList], scrollAmount=highlightPos)
+    #  table.cursorToEnd(-1 if 'WithText' in behaviour else 0)
+    table.cursorToEnd(0)
 
     if 'WithText' in behaviour: 
         sys.stdout.write(f"\n\033[2K{(hintText if appendText or highlightPos==len(items) else '')+appendText}")
@@ -206,7 +231,8 @@ def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, 
             print('\n')
             os._exit(0)
 
-        table.cursorToBeginning(0)
+        table.cursorToBeginning(1 if 'WithText' in behaviour else 0)
+        #  table.cursorToBeginning(0)
 
         if key not in ignoredKeys:
             if key == 'q':
@@ -237,13 +263,18 @@ def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, 
         if keyCallback != None:
             highlightList, highlightPos, appendText, ignoredKeys = keyCallback(key, table, highlightList, highlightPos, ignoredKeys, appendText)
 
-        table.update([*staticHighlights,*highlightList], len((appendText).split('\n')) if 'WithText' in behaviour else 0)
-
-        table.cursorToEnd(0)
+        table.update([*staticHighlights,*highlightList], len((appendText).split('\n')) if 'WithText' in behaviour else 0, scrollAmount=highlightPos)
 
         if 'WithText' in behaviour: 
+            table.cursorToEnd(0)
+            #  sys.stdout.write(f"\033[1E")
+            #  sys.stdout.write(f"\033[K")
+            #  sys.stdout.write(f"\033[1F")
+
             sys.stdout.write(f"\n\033[2K{(hintText if appendText or highlightPos==len(items) else '')+appendText}")
             #  sys.stdout.write(f"\033[1F")
+        else:
+            table.cursorToEnd(0)
 
 
     table.clear()
@@ -253,14 +284,14 @@ def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, 
 
 if __name__ == "__main__":
     tablelist = [
-        ['episodio 1', 'alan'  ],
-        ['episodio 2', 'jose'  ],
-        ['episodio 2', 'jose'  ],
-        ['episodio 2', 'jose'  ],
-        ['episodio 2', 'jose'  ],
-        ['episodio 3', 'dos'   ],
-        ['episodio 4', 'dos'   ],
-        ['episodio 5', 'legal'],
+        ['episodio 1', 'um'  ],
+        ['episodio 2', 'dois'  ],
+        ['episodio 3', 'tres'  ],
+        ['episodio 4', 'quatro'  ],
+        ['episodio 5', 'cinco'  ],
+        ['episodio 6', 'seis'   ],
+        ['episodio 7', 'sete'   ],
+        ['episodio 8', 'oito'],
     ]
 
     print("before")
@@ -268,7 +299,7 @@ if __name__ == "__main__":
     staticHighlights=[[3, 'green']]
 
     while results[0] != None:
-        results = interactiveTable(tablelist, ["Episódios", "Nome"], "rc", behaviour='multiSelectWithText', hintText='Digite: ', staticHighlights=staticHighlights)
+        results = interactiveTable(tablelist, ["Episódios", "Nome"], "rc", behaviour='multiSelectWithText',maxListSize=5, staticHighlights=staticHighlights)
 
         posToRemove = [item[0] for item in results[1][1:]]
         tablelist = [item for i, item in enumerate(tablelist) if i not in posToRemove]

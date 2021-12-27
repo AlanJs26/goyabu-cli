@@ -104,7 +104,7 @@ if len(lastSession) and args.name == '' and args.yes == False and args.update ==
     results = [[],[],None]
 
     while len(results[1]) != 1 and results[0] != None:
-        results = interactiveTable(tableVals[::-1], ["", "Sessões Anteriores", "Data"], "rcc", behaviour='multiSelectWithText', hintText='Nome do Anime[1]: ', highlightRange=(2,2))
+        results = interactiveTable(tableVals[::-1], ["", "Sessões Anteriores", "Data"], "rcc", behaviour='multiSelectWithText', maxListSize=17, hintText='Nome do Anime[1]: ', highlightRange=(2,2))
         if results[0] == None: continue
 
         posToRemove = [len(tableVals)-1-item[0] for item in results[1][1:]]
@@ -161,7 +161,7 @@ if  args.yes == False and args.update == False:
     
     tableValsOrig = [[i+1, namelist[i][0], namelist[i][1]] for i in range(len(namelist))]
     tableVals = [[i+1, nameTrunc(namelist[i][0], 15+len(namelist[i][0])), namelist[i][1]] for i in range(len(namelist))]
-    result = interactiveTable(tableVals, ["", "Animes", "engine"], "rll", highlightRange=(2,2))
+    result = interactiveTable(tableVals, ["", "Animes", "engine"], "rll", maxListSize=17, highlightRange=(2,2))
     args.name = tableValsOrig[result[0][0]-1][1]
     chosenEngine = result[0][-1]
 
@@ -242,8 +242,9 @@ if args.update == False:
         'date': datetime.now().strftime('%d-%m-%y'),
         'numberOfEpisodes': len(episodesNames),
         'numberOfEpisodesComputed': len(episodesNames),
+        'engine': chosenEngine,
     }
-    if args.player != 'none':
+    if args.player not in lastSession:
         newSessionItem['lastep'] = 1
 else:
     newSessionItem = {}
@@ -264,7 +265,6 @@ def updateList():
             if args.update == False and key == args.name:
                 newSessionItem['numberOfEpisodes'] =  numAnilist
                 newSessionItem['numberOfEpisodesComputed'] =  numGoyabu
-                newSessionItem['engine'] =  chosenEngine
             # simple progress bar
             print(f"[{'-'*i}{' '*(len(tmpLastSession)-i)}]    updating the local list", end='\r')
     except KeyboardInterrupt:
