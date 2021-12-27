@@ -54,7 +54,7 @@ To run the program, type `python anime.py` in the program folder or add to syste
 
 ## ⚠️ Warning
 
-Currently all animes are being downloaded from ![Goyabu](https://goyabu.com), so all subtitles are in **Portuguese**  
+Currently all animes are being indexed through [Goyabu](https://goyabu.com), so all subtitles are in **Portuguese**  
 
 I have plans to add **English** support along with TV shows and movies, but this will take a while  
 
