@@ -37,7 +37,7 @@ def searchAnime(name:str, engines = searchEngines):
 
     return foundAnimesByEngine, foundAnimes
 
-def animeInfo(*types:str, query:Optional[str]=None, engines = searchEngines):
+def animeInfo(*types:str, query:Optional[str]=None, engines = searchEngines, **kwargs):
     availableEngines = [key for key, item in capabilities.items() if all(elem in item for elem in types)] 
     availableEngines = list(set(availableEngines).intersection(engines))
 
@@ -47,7 +47,7 @@ def animeInfo(*types:str, query:Optional[str]=None, engines = searchEngines):
     outputs = {}
 
     for engine in availableEngines:
-        outputs[engine] = infoAlias[engine](*types, query=query)
+        outputs[engine] = infoAlias[engine](*types, query=query, **kwargs)
 
     return outputs
 

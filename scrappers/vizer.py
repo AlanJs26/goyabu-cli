@@ -14,6 +14,7 @@ from scrappers.utils import infoDecorator
 possibleOutputs = [
     'search',
     'episodes',
+    'episodesNum',
 ]
 
 
@@ -51,7 +52,6 @@ def vizerMovie(watchId:str) -> str:
 
     r = requests.get(url=f"https://vizer.tv/embed/getPlay.php?id={playid}&sv=fembed", headers=headers)
     nexthref = re.search(r'(?<=window\.location\.href=\").+?(?=\";)', r.text)[0]
-    print(nexthref)
     newId = re.search(r'(?<=v\/).+?(?=#|$)', nexthref)[0]
 
     r = requests.post(url=f"http://diasfem.com/api/source/{newId}")
@@ -59,8 +59,50 @@ def vizerMovie(watchId:str) -> str:
 
     return finalUrl
 
+def vizerEpisodesNum(name:str) -> int:
 
-def vizerSeries(watchId:str) -> Dict[str, str]:
+    results = vizerSearch(name)
+    resultsFiltered = [result for result in results if result[0] == name]
+
+    if len(resultsFiltered) == 0:
+        chosenWatchId = results[0][1]
+        chosenIsMovie = results[0][2]
+    else:
+        chosenWatchId = resultsFiltered[0][1]
+        chosenIsMovie = resultsFiltered[0][2]
+
+    if chosenIsMovie == True: 
+        return 1
+
+
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Cafari/537.36'}
+
+    r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"getSeasons": chosenWatchId}, headers=headers)
+    rawResult = r.json()['list']
+    seasons = []
+    for index in rawResult:
+        newItem = (rawResult[index]['id'], rawResult[index]['name'])
+        seasons.append(newItem)
+
+    episodescount = 0
+    for season in seasons:
+        seasonId, _ = season
+
+        r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"getEpisodes": seasonId}, headers=headers)
+        rawResult = r.json()['list']
+        episodescount+= len(rawResult)
+
+    return episodescount
+
+
+def vizerSeries(watchId:str, slicelist=None) -> Dict[str, str]:
+
+    if slicelist == None or type(slicelist) != list or len(slicelist) != 2:
+        slicelist = [None, None]
+    else:
+        slicelist = [int(i) if i.isdigit() else None for i in slicelist]
+        slicelist[1] = slicelist[1] and slicelist[1]+1
+
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Cafari/537.36'}
 
     r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"getSeasons": watchId}, headers=headers)
@@ -78,6 +120,8 @@ def vizerSeries(watchId:str) -> Dict[str, str]:
         rawResult = r.json()['list']
         for index in rawResult:
             episodesBySeason.append((rawResult[index]['id'], f"S{seasonName} - {rawResult[index]['title']}"))
+
+    episodesBySeason = episodesBySeason[slice(*slicelist)]
 
 
 
@@ -143,7 +187,8 @@ def vizerSeries(watchId:str) -> Dict[str, str]:
 
     return {name:link for name,link in finalUrls}
 
-def vizerEpisodes(name:str) -> Dict[str, str]: 
+def vizerEpisodes(name:str, slicelist=None) -> Dict[str, str]: 
+
     results = vizerSearch(name)
     resultsFiltered = [result for result in results if result[0] == name]
 
@@ -159,21 +204,27 @@ def vizerEpisodes(name:str) -> Dict[str, str]:
     if chosenIsMovie == True: 
         return {chosenName: vizerMovie(chosenWatchId)}
     else:
-        return vizerSeries(chosenWatchId)
+        return vizerSeries(chosenWatchId, slicelist=slicelist)
 
 
 
 
 @infoDecorator(possibleOutputs)
-def vizerInfo(*type:str, query:Optional[str]=None) -> Union[Dict[str, Dict[str, str]], List[str]]:
+def vizerInfo(*type:str, query:Optional[str]=None, **kwargs) -> Union[Dict[str, Dict[str, str]], List[str]]:
 
     outputs = {}
 
     if 'search' in type and query:
         outputs['search'] = [item[0] for item in vizerSearch(query)] 
 
+    if 'episodesNum' in type and query:
+        outputs['episodesNum'] = vizerEpisodesNum(query)
+
     if 'episodes' in type and query:
-        outputs['episodes'] = vizerEpisodes(query) 
+        if 'range' in kwargs:
+            outputs['episodes'] = vizerEpisodes(query, slicelist=kwargs['range']) 
+        else:
+            outputs['episodes'] = vizerEpisodes(query) 
 
     return outputs
 

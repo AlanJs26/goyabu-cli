@@ -18,18 +18,27 @@ def dir_path(string):
     else:
         raise NotADirectoryError(string)
 
+usingdefaulteprange = True
+def episoderangeparser(string):
+    if string == '': return ['', '']
+    global usingdefaulteprange
+    usingdefaulteprange = False
+
+    slicestring = [*string.split(':'), ''][:2]
+    return slicestring
+
 parser = ArgumentParser(description='plays anime from terminal', formatter_class=RawTextHelpFormatter)
 
-parser.add_argument('name',          action='store', default='',    type=str, nargs='?',
+parser.add_argument('name',          action='store', default='', type=str, nargs='*',
                     help='anime name')
 parser.add_argument('-s','--silent', action='store_true',
                     help='minimal output')
 parser.add_argument('-y','--yes',    action='store_true',
                     help='use all default options')
-parser.add_argument('--episodes',    action='store', default='',    type=str, metavar='RANGE',
-                    help='range of episodes to watch\n         n    - single episode\n         n:n  - range of episodes')
+parser.add_argument('--episodes',    action='store', default=['', ''],    type=episoderangeparser, metavar='RANGE',
+                    help='range of episodes to watch\n         n    - same as n:-1\n         n:n  - range of episodes')
 parser.add_argument('--player',      action='store', default='mpv', type=str,
-    help='player to run the anime\n         mpv  - use MPV player(default)\n         none - run as server\n         xxxx - use any other player, example: mplayer')
+                    help='player to run the anime\n         mpv  - use MPV player(default)\n         none - run as server\n         xxxx - use any other player, example: mplayer')
 parser.add_argument('--update',      action='store_true',         
                     help='update the local list')
 parser.add_argument('--config-dir',    action='store', default='',    type=dir_path, metavar='config directory',
@@ -39,16 +48,11 @@ args = parser.parse_args()
 
 if args.update == True:
     args.player = 'none'
-    args.episodes = ''
     args.silent = True
 
-
-slicelist = ['', '']
+args.name = ' '.join(args.name)
 chosenEngine = 'goyabu'
 
-if args.episodes:
-    slicelist = args.episodes.split(':')
-    if len(slicelist) == 1: slicelist.append('')
 
 
 # read last session file, if don't exist create one
@@ -96,9 +100,6 @@ for i,name in enumerate(lastSession):
 #  [i+1, f'{bcolors["green"]}{nameTrunc(name, 45+len(name))} - Completo [{epsComputed}/{eps}]{bcolors["end"]}', watchDate]
         )
 
-
-
-
 # Print the interactive Last Session table and remove the selected items
 if len(lastSession) and args.name == '' and args.yes == False and args.update == False:
     results = [[],[],None]
@@ -139,8 +140,8 @@ if args.name.isdigit() and int(args.name) <= len(lastSession):
     args.name = list(lastSession.keys())[int(args.name)-1]
     args.yes = True
     chosenEngine = lastSession[args.name]['engine']
-    if args.episodes == '':
-        slicelist = [str(lastSession[args.name]['lastep']), '']
+    if not any(args.episodes):
+        args.episodes = [str(lastSession[args.name]['lastep']), '']
 
 if args.update == False:
     rawnamelist = searchAnime(args.name, engines=['goyabu', 'vizer'])[0]
@@ -149,6 +150,9 @@ if args.update == False:
         for item in rawnamelist[engine]:
             namelist.append([item, engine])
 
+    if args.yes:
+        args.name = namelist[0][0]
+        chosenEngine = namelist[0][1]
 else:
     namelist = []
 
@@ -168,9 +172,14 @@ if  args.yes == False and args.update == False:
 
 if args.update == False:
     #  episodes = animeInfo('episodes', query=args.name)['goyabu', 'vizer']
-    episodes = animeInfo('episodes', query=args.name, engines=[chosenEngine])[chosenEngine]
-    episodesNames = [name for name,_ in episodes.items()]
-    videolist = [link for _,link in episodes.items()]
+    if any(args.episodes) and usingdefaulteprange == False:
+        episodes = animeInfo('episodes', query=args.name, range=args.episodes, engines=[chosenEngine])[chosenEngine]
+    else:
+        episodes = animeInfo('episodes', query=args.name, engines=[chosenEngine])[chosenEngine]
+    #  episodesNames = episodes.keys()
+    #  videolist = episodes.values()
+    episodesNames = [*episodes.keys()]
+    videolist = [*episodes.values()]
 else: 
     episodes = []
     episodesNames = []
@@ -187,7 +196,7 @@ if not args.silent:
     print('\n'.join(table[0:3]+table[1::2][1:]+table[-1:]))
 
 
-if slicelist == ['']:
+if not any(args.episodes):
     if not args.silent:
         print('''
         n - único episódio
@@ -195,8 +204,8 @@ if slicelist == ['']:
         todos - todos os episódios
         ''')
     try:
-        slicelist = str(input('Episódios para assistir [todos]: ')).split(':') if not args.yes else ['todos']
-        slicelist.append('')
+        args.episodes = str(input('Episódios para assistir [todos]: ')).split(':') if not args.yes else ['todos']
+        args.episodes.append('')
     except KeyboardInterrupt:
         print('')
         os._exit(0)
@@ -204,12 +213,12 @@ if slicelist == ['']:
 
 # extract the choosen range from the fetched lists
 count = 1
-slicelist = [int(i) if i.isdigit() else None for i in slicelist]
-if any(slicelist) and args.episodes and args.update == False:
-    count = slicelist[0] or count
+args.episodes = [int(i) if i.isdigit() else None for i in args.episodes]
+if any(args.episodes) and usingdefaulteprange == False and args.update == False:
+    count = args.episodes[0] or count
 
-    videolist     =     videolist[slice(slicelist[0], slicelist[1]+1 if slicelist[1] else None)]
-    episodesNames = episodesNames[slice(slicelist[0], slicelist[1]+1 if slicelist[1] else None)]
+    #  videolist     =     videolist[slice(args.episodes[0], args.episodes[1]+1 if args.episodes[1] else None)]
+    #  episodesNames = episodesNames[slice(args.episodes[0], args.episodes[1]+1 if args.episodes[1] else None)]
 
 
 # create the playlist file for the player
@@ -240,7 +249,7 @@ if args.update == False:
     newSessionItem = {
         #  'episodes': [[namelist[i], videolist[i]] for i in range(len(namelist))],
         'date': datetime.now().strftime('%d-%m-%y'),
-        'numberOfEpisodesComputed': len(episodesNames),
+        'numberOfEpisodesComputed': len(episodesNames) if usingdefaulteprange else animeInfo('episodesNum', query=args.name, engines=[chosenEngine])[chosenEngine],
         'engine': chosenEngine,
     }
     if args.name not in lastSession:
@@ -335,7 +344,7 @@ elif(args.player == 'mpv'):
     mpv.play(filepath)
     mpv.command('keypress', 'space')
     sleep(2)
-    mpv.command('playlist-play-index', slicelist[0]-1 if slicelist[0] and args.episodes == '' else 0)
+    mpv.command('playlist-play-index', args.episodes[0]-1 if args.episodes[0] and usingdefaulteprange else 0)
     mpv.command('keypress', 'space')
     #  updateList()
 elif args.player != 'none':

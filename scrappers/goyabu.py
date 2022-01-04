@@ -89,7 +89,15 @@ def goyabuStatus(name:str) -> str:
 
     return status
 
-def goyabuEpisodes(name:str) -> Dict[str, str]:
+def goyabuEpisodes(name:str, slicelist=None) -> Dict[str, str]:
+
+    if slicelist == None or type(slicelist) != list or len(slicelist) != 2:
+        slicelist = [None, None]
+    else:
+        slicelist = [int(i) if i.isdigit() else None for i in slicelist]
+        slicelist[1] = slicelist[1] and slicelist[1]+1
+
+
     global videolist
     global hreflist
     global namelist
@@ -105,7 +113,7 @@ def goyabuEpisodes(name:str) -> Dict[str, str]:
 
     eplist = soup.find(class_='episodes-container')
 
-    ep_hreflist = [ep['href'] for ep in eplist.find_all('a')]
+    ep_hreflist = [ep['href'] for ep in eplist.find_all('a')][slice(*slicelist)]
     ep_idlist = [href[26:-1] for href in ep_hreflist]
     ep_namelist = [name.text for name in eplist.find_all('h3')]
     videolist = ['' for _ in range(len(ep_idlist))]
@@ -155,7 +163,7 @@ def goyabuEpisodesNum(name:str) -> int:
 
 
 @infoDecorator(possibleOutputs)
-def goyabuInfo(*type:str, query:Optional[str]=None) -> Union[Dict[str, Dict[str, str]], List[str]]:
+def goyabuInfo(*type:str, query:Optional[str]=None, **kwargs) -> Union[Dict[str, Dict[str, str]], List[str]]:
 
     global hreflist
     global namelist
@@ -163,7 +171,10 @@ def goyabuInfo(*type:str, query:Optional[str]=None) -> Union[Dict[str, Dict[str,
     outputs = {}
 
     if 'episodes' in type and query:
-        outputs['episodes'] = goyabuEpisodes(query)
+        if 'range' in kwargs:
+            outputs['episodes'] = goyabuEpisodes(query, slicelist=kwargs['range'])
+        else:
+            outputs['episodes'] = goyabuEpisodes(query)
 
     if 'episodesNum' in type and query:
         outputs['episodesNum'] = goyabuEpisodesNum(query)

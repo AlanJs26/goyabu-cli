@@ -13,7 +13,7 @@ possibleOutputs = [
 anilistClient = Client()
 
 @infoDecorator(possibleOutputs)
-def anilistInfo(*type:str, query:Optional[str]=None) -> Union[Dict[str, Dict[str, str]], List[str]]:
+def anilistInfo(*type:str, query:Optional[str]=None, **kwargs) -> Union[Dict[str, Dict[str, str]], List[str]]:
 
     outputs = {}
 
