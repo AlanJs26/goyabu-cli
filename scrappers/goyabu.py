@@ -5,6 +5,7 @@ import re
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from scrappers.utils import infoDecorator
+#  from utils import infoDecorator
 
 hreflist = []
 namelist = []
@@ -117,9 +118,6 @@ def goyabuEpisodes(name:str, slicelist=None) -> Dict[str, str]:
     ep_idlist = [href[26:-1] for href in ep_hreflist]
     ep_namelist = [name.text for name in eplist.find_all('h3')]
     videolist = ['' for _ in range(len(ep_idlist))]
-    # (?<=<source).+?src='(.+[^'])(?=' )
-    # (?<=p",file: ").+?(?="[\n\,]?)
-    # (?<=<source).+?src='(.*?)(?='\s+?/>)
 
     def getvideourl(url, id):
         html=requests.get(url).text 

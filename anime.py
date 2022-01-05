@@ -144,7 +144,7 @@ if args.name.isdigit() and int(args.name) <= len(lastSession):
         args.episodes = [str(lastSession[args.name]['lastep']), '']
 
 if args.update == False:
-    rawnamelist = searchAnime(args.name, engines=['goyabu', 'vizer'])[0]
+    rawnamelist = searchAnime(args.name, engines=['goyabu', 'vizer', 'animdl'])[0]
     namelist = []
     for engine in rawnamelist:
         for item in rawnamelist[engine]:

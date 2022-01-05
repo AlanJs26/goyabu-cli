@@ -3,12 +3,14 @@ from typing import Callable, Dict, List, Optional
 from scrappers.goyabu import goyabuInfo
 from scrappers.aniList import anilistInfo
 from scrappers.vizer import vizerInfo
+from scrappers.animDl import animdlInfo
 from rich import print
 
 infoAlias: Dict[str, Callable] = {
     'goyabu': goyabuInfo,
     'anilist': anilistInfo,
     'vizer': vizerInfo,
+    'animdl': animdlInfo,
 }
 
 capabilities = {name:info('capabilities') for name, info in infoAlias.items()}
