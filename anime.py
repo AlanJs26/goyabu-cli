@@ -275,7 +275,7 @@ def updateList():
                 newSessionItem['numberOfEpisodes'] =  numAnilist
                 newSessionItem['numberOfEpisodesComputed'] =  numGoyabu
             # simple progress bar
-            print(f"[{'-'*i}{' '*(len(tmpLastSession)-i)}]    updating the local list", end='\r')
+            print(f"\033[K[{'-'*i}{' '*(len(tmpLastSession)-i)}]    updating the local list", end='\r')           
     except KeyboardInterrupt:
         exit()
     lastSession = tmpLastSession
@@ -295,11 +295,11 @@ def updateList():
             json.dump(lastSession, rawjson)
 
 # Check if mpv is installed
-if which('mpv') == None:
+if which('mpv') == None and args.player != 'none':
     args.player = None
 
-if(args.player == None):
-    print('MPV is not installed, please specify an alternative player')
+if(args.player == None ):
+    print('MPV is not installed, please specify an alternative player or serve the file over network usin the "none" argument')
     exit()
 elif(args.player == 'mpv'):
     from python_mpv_jsonipc import MPV

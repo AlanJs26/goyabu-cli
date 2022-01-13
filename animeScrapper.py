@@ -4,7 +4,7 @@ from scrappers.goyabu import goyabuInfo
 from scrappers.aniList import anilistInfo
 from scrappers.vizer import vizerInfo
 from scrappers.animDl import animdlInfo
-from rich import print
+#  from rich import print
 
 infoAlias: Dict[str, Callable] = {
     'goyabu': goyabuInfo,

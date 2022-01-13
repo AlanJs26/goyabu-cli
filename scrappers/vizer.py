@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional, Tuple, Union, overload
+from typing import Callable, Dict, List, Optional, Tuple, Union, overload, Tuple
 from bs4 import BeautifulSoup as bs4
 import requests
 import re
@@ -21,15 +21,15 @@ possibleOutputs = [
 wasBlocked = {}
 count = 0
 
-def vizerSearch(name:str) -> List[str]:
+def vizerSearch(name:str) -> List[Tuple[str,str,bool]]:
     html = requests.get(f'https://vizer.tv/pesquisar/{" ".join(name.split(" "))}').text
     soup = bs4(html, 'html.parser')
 
     animeList = soup.find(class_='listItems')
-    namelist = [name.text for name in animeList.find_all('span')] 
-    watchIdlist = [re.search(r'\/(.+?\/){4}(.+)\.jpg', link['src'])[2] for link in animeList.find_all('img')]
+    namelist:List[str] = [name.text for name in animeList.find_all('span')] 
+    watchIdlist:List[str] = [re.search(r'\/(.+?\/){4}(.+)\.jpg', link['src'])[2] for link in animeList.find_all('img')]
     infos = animeList.find_all('div', class_='infos')
-    isMovie = []
+    isMovie:List[bool] = []
     for info in infos:
         c = info.find_all('div', class_='c')
         isMovie.append(False if len(c) else True)
@@ -64,12 +64,14 @@ def vizerEpisodesNum(name:str) -> int:
     results = vizerSearch(name)
     resultsFiltered = [result for result in results if result[0] == name]
 
-    if len(resultsFiltered) == 0:
+    if len(resultsFiltered):
+        chosenWatchId = resultsFiltered[0][1]
+        chosenIsMovie = resultsFiltered[0][2]
+    elif len(results):
         chosenWatchId = results[0][1]
         chosenIsMovie = results[0][2]
     else:
-        chosenWatchId = resultsFiltered[0][1]
-        chosenIsMovie = resultsFiltered[0][2]
+        return 1
 
     if chosenIsMovie == True: 
         return 1
