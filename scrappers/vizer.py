@@ -26,6 +26,9 @@ def vizerSearch(name:str) -> List[Tuple[str,str,bool]]:
     soup = bs4(html, 'html.parser')
 
     animeList = soup.find(class_='listItems')
+    if not animeList or len(animeList):
+        return []
+
     namelist:List[str] = [name.text for name in animeList.find_all('span')] 
     watchIdlist:List[str] = [re.search(r'\/(.+?\/){4}(.+)\.jpg', link['src'])[2] for link in animeList.find_all('img')]
     infos = animeList.find_all('div', class_='infos')
