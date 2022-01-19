@@ -263,7 +263,7 @@ def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, 
         if keyCallback != None:
             highlightList, highlightPos, appendText, ignoredKeys = keyCallback(key, table, highlightList, highlightPos, ignoredKeys, appendText)
 
-        table.update([*staticHighlights,*highlightList], len((appendText).split('\n')) if 'WithText' in behaviour else 0, scrollAmount=highlightPos)
+        table.update([*staticHighlights,*highlightList], len((appendText).split('\n')) if 'WithText' in behaviour else 0, scrollAmount=highlightPos-floor(maxListSize/2) if highlightPos>maxListSize/2 else 0)
 
         if 'WithText' in behaviour: 
             table.cursorToEnd(0)
@@ -288,6 +288,11 @@ if __name__ == "__main__":
         ['episodio 2', 'dois'  ],
         ['episodio 3', 'tres'  ],
         ['episodio 4', 'quatro'  ],
+        ['episodio 4', 'quatro'  ],
+        ['episodio 5', 'cinco'  ],
+        ['episodio 6', 'seis'   ],
+        ['episodio 7', 'sete'   ],
+        ['episodio 8', 'oito'],
         ['episodio 5', 'cinco'  ],
         ['episodio 6', 'seis'   ],
         ['episodio 7', 'sete'   ],
@@ -299,28 +304,27 @@ if __name__ == "__main__":
     staticHighlights=[[3, 'green']]
 
     while results[0] != None:
-        results = interactiveTable(tablelist, ["Episódios", "Nome"], "rc", behaviour='multiSelectWithText',maxListSize=5, staticHighlights=staticHighlights)
+        results = interactiveTable(tablelist, ["Episódios", "Nome"], "rc", behaviour='single',maxListSize=7, staticHighlights=staticHighlights, highlightRange=(1,2))
 
         posToRemove = [item[0] for item in results[1][1:]]
         tablelist = [item for i, item in enumerate(tablelist) if i not in posToRemove]
         staticHighlights = [item for item in staticHighlights if item[0] not in posToRemove]
 
     print(results)
-    os._exit(0)
 
 
-    if results[-1][len('Digite: '):] != 'delete':
-        posToRemove = [item[0] for item in results[1][1:]]
-        newTablelist = [item for i, item in enumerate(tablelist) if i not in posToRemove]
+    #  if results[-1][len('Digite: '):] != 'delete':
+        #  posToRemove = [item[0] for item in results[1][1:]]
+        #  newTablelist = [item for i, item in enumerate(tablelist) if i not in posToRemove]
 
 
-        results = interactiveTable(newTablelist, ["Episódios", "Nome"], "rc",  behaviour='multiSelect')
-        posToRemove = [item[0] for item in results[1][1:]]
-        newTablelist = [item for i, item in enumerate(newTablelist) if i not in posToRemove]
-        results = interactiveTable(newTablelist, ["Episódios", "Nome"], "rc",  behaviour='single')
-        print(newTablelist)
+        #  results = interactiveTable(newTablelist, ["Episódios", "Nome"], "rc",  behaviour='multiSelect')
+        #  posToRemove = [item[0] for item in results[1][1:]]
+        #  newTablelist = [item for i, item in enumerate(newTablelist) if i not in posToRemove]
+        #  results = interactiveTable(newTablelist, ["Episódios", "Nome"], "rc",  behaviour='single')
+        #  print(newTablelist)
 
-    print("after")
+    #  print("after")
 
 
 #  termios.tcsetattr(sys.stdin, termios.TCSADRAIN,filedescriptors)
