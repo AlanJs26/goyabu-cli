@@ -26,7 +26,7 @@ def vizerSearch(name:str) -> List[Tuple[str,str,bool]]:
     soup = bs4(html, 'html.parser')
 
     animeList = soup.find(class_='listItems')
-    if not animeList or len(animeList):
+    if not animeList or len(animeList) == 0:
         return []
 
     namelist:List[str] = [name.text for name in animeList.find_all('span')] 
@@ -43,6 +43,8 @@ def vizerMovie(watchId:str) -> str:
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
 
     r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"watchMovie": watchId}, headers=headers)
+
+    print(r.text)
     idlanglist = r.json()['list']
     playid = "0"
     for index in idlanglist:
@@ -236,13 +238,13 @@ def vizerInfo(*type:str, query:Optional[str]=None, **kwargs) -> Union[Dict[str, 
 if __name__ == "__main__":
     #  print(anilistInfo('episodesNum', query='boku'))
 
-    #  result = vizerInfo('search', query='umbrella')
-    #  print(result)
+    result = vizerSearch('aranha')
+    print(result)
     #  vizersearchresult = vizerSearch('umbrella')
     #  print(vizersearchresult)
 
-    vizerseriesresult = vizerSeries('5263')
-    print(vizerseriesresult)
+    #  vizerseriesresult = vizerSeries('5263')
+    #  print(vizerseriesresult)
     #  headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
 
     #  r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"watchMovie": 25659}, headers=headers)
