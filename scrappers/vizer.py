@@ -5,6 +5,7 @@ import re
 from time import sleep
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from json import loads as load_json
 
 from scrappers.utils import infoDecorator
 #  from utils import infoDecorator
@@ -29,37 +30,41 @@ def vizerSearch(name:str) -> List[Tuple[str,str,bool]]:
     if not animeList or len(animeList) == 0:
         return []
 
+    urllist:List[str] = [f'https://vizer.tv/{url["href"]}' for url in animeList.select('.gPoster')] 
     namelist:List[str] = [name.text for name in animeList.find_all('span')] 
     watchIdlist:List[str] = [re.search(r'\/(.+?\/){4}(.+)\.jpg', link['src'])[2] for link in animeList.find_all('img')]
+
     infos = animeList.find_all('div', class_='infos')
     isMovie:List[bool] = []
     for info in infos:
         c = info.find_all('div', class_='c')
         isMovie.append(False if len(c) else True)
 
-    return list(zip(namelist, watchIdlist, isMovie)) 
+    return list(zip(namelist, urllist, isMovie)) 
 
-def vizerMovie(watchId:str) -> str:
+def vizerMovie(movie_url:str) -> str:
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
 
-    r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"watchMovie": watchId}, headers=headers)
+    html = requests.get(movie_url).text
 
-    print(r.text)
-    idlanglist = r.json()['list']
-    playid = "0"
-    for index in idlanglist:
-        playid = idlanglist[index]['id']
-        if idlanglist[index]['lang'] == "Dublado":
-            break
+    raw_langs = re.search(r'(?<=videoPlayerBox\(){"status.+(?=\);)', html)[0]
+
+    langs_id = [item['id'] for item in load_json(raw_langs)['list'].values()]
+
+    chosen_lang_id = langs_id[-1]
 
 
-    #  playid = r.json()['list']["0"]['id']
+    r = requests.get(url=f"https://vizer.tv/embed/getPlay.php?id={chosen_lang_id}&sv=fembed", headers=headers)
 
-    r = requests.get(url=f"https://vizer.tv/embed/getPlay.php?id={playid}&sv=fembed", headers=headers)
     nexthref = re.search(r'(?<=window\.location\.href=\").+?(?=\";)', r.text)[0]
-    newId = re.search(r'(?<=v\/).+?(?=#|$)', nexthref)[0]
 
-    r = requests.post(url=f"http://diasfem.com/api/source/{newId}")
+    r = requests.get(url=nexthref)
+
+    api_url = re.search('https?://.+?(?=/)', r.url)[0]
+    fembed_id = nexthref.split('/')[-1]
+
+    r = requests.post(url=f'{api_url}/api/source/{fembed_id}')
+
     finalUrl = r.json()['data'][-1]['file']
 
     return finalUrl
