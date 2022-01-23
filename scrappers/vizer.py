@@ -37,8 +37,10 @@ def vizerSearch(name:str) -> List[Tuple[str,str,bool]]:
     infos = animeList.find_all('div', class_='infos')
     isMovie:List[bool] = []
     for info in infos:
-        c = info.select('.c, .t')
-        isMovie.append(False if len(c) else True)
+        c = info.select_one('.c, .t')
+
+        isMovie.append(False if len(c.text) else True)
+        #  isMovie.append(True)
 
     return list(zip(namelist, urllist, isMovie)) 
 

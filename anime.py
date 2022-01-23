@@ -186,6 +186,7 @@ else:
     videolist = []
 
 if not args.silent:
+    print(episodesNames)
     table = tt.to_string(
         [[i+1, nameTrunc(episodesNames[i], len(episodesNames[i])+15)] for i in range(len(episodesNames))],
         header=["","Episódios"],
