@@ -37,37 +37,10 @@ def vizerSearch(name:str) -> List[Tuple[str,str,bool]]:
     infos = animeList.find_all('div', class_='infos')
     isMovie:List[bool] = []
     for info in infos:
-        c = info.find_all('div', class_='c')
+        c = info.select('.c, .t')
         isMovie.append(False if len(c) else True)
 
     return list(zip(namelist, urllist, isMovie)) 
-
-def vizerMovie(movie_url:str) -> str:
-    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
-
-    html = requests.get(movie_url).text
-
-    raw_langs = re.search(r'(?<=videoPlayerBox\(){"status.+(?=\);)', html)[0]
-
-    langs_id = [item['id'] for item in load_json(raw_langs)['list'].values()]
-
-    chosen_lang_id = langs_id[-1]
-
-
-    r = requests.get(url=f"https://vizer.tv/embed/getPlay.php?id={chosen_lang_id}&sv=fembed", headers=headers)
-
-    nexthref = re.search(r'(?<=window\.location\.href=\").+?(?=\";)', r.text)[0]
-
-    r = requests.get(url=nexthref)
-
-    api_url = re.search('https?://.+?(?=/)', r.url)[0]
-    fembed_id = nexthref.split('/')[-1]
-
-    r = requests.post(url=f'{api_url}/api/source/{fembed_id}')
-
-    finalUrl = r.json()['data'][-1]['file']
-
-    return finalUrl
 
 def vizerEpisodesNum(name:str) -> int:
 
@@ -106,8 +79,36 @@ def vizerEpisodesNum(name:str) -> int:
 
     return episodescount
 
+def vizerMovie(movie_url:str) -> str:
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
 
-def vizerSeries(watchId:str, slicelist=None) -> Dict[str, str]:
+    html = requests.get(movie_url).text
+
+    raw_langs = re.search(r'(?<=videoPlayerBox\(){"status.+(?=\);)', html)[0]
+
+    langs_id = [item['id'] for item in load_json(raw_langs)['list'].values()]
+
+    chosen_lang_id = langs_id[-1]
+
+
+    r = requests.get(url=f"https://vizer.tv/embed/getPlay.php?id={chosen_lang_id}&sv=fembed", headers=headers)
+
+    nexthref = re.search(r'(?<=window\.location\.href=\").+?(?=\";)', r.text)[0]
+
+    r = requests.get(url=nexthref)
+
+    api_url = re.search('https?://.+?(?=/)', r.url)[0]
+    fembed_id = nexthref.split('/')[-1]
+
+    r = requests.post(url=f'{api_url}/api/source/{fembed_id}')
+
+    finalUrl = r.json()['data'][-1]['file']
+
+    return finalUrl
+
+
+
+def vizerSeries(movie_url:str, slicelist=None) -> Dict[str, str]:
 
     if slicelist == None or type(slicelist) != list or len(slicelist) != 2:
         slicelist = [None, None]
@@ -117,12 +118,19 @@ def vizerSeries(watchId:str, slicelist=None) -> Dict[str, str]:
 
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Cafari/537.36'}
 
-    r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"getSeasons": watchId}, headers=headers)
-    rawResult = r.json()['list']
-    seasons = []
-    for index in rawResult:
-        newItem = (rawResult[index]['id'], rawResult[index]['name'])
-        seasons.append(newItem)
+    html = requests.get(movie_url).text
+    soup = bs4(html, 'html.parser')
+    season_items = soup.select('.bslider .item')
+    seasons = [(item['data-season-id'], item.text) for item in season_items]
+
+
+    #  r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"getSeasons": watchId}, headers=headers)
+
+    #  rawResult = r.json()['list']
+    #  seasons = []
+    #  for index in rawResult:
+        #  newItem = (rawResult[index]['id'], rawResult[index]['name'])
+        #  seasons.append(newItem)
 
     episodesBySeason = []
     for season in seasons:
@@ -169,14 +177,17 @@ def vizerSeries(watchId:str, slicelist=None) -> Dict[str, str]:
 
                 r = requests.get(url=f"https://vizer.tv/embed/getPlay.php?id={languages[-1][0]}&sv=fembed", headers=headers)
                 nexthref = re.search(r'(?<=window\.location\.href=\").+?(?=\";)', r.text)[0]
-                newId = re.search(r'(?<=v\/).+?(?=#|$)', nexthref)[0]
 
-                r = requests.post(url=f"https://diasfem.com/api/source/{newId}", headers=headers)
+                r = requests.get(url=nexthref)
+                api_url = re.search('https?://.+?(?=/)', r.url)[0]
+                fembed_id = nexthref.split('/')[-1]
+
+                r = requests.post(url=f'{api_url}/api/source/{fembed_id}')
+
                 finalUrls[index] = (episodeName, r.json()['data'][-1]['file'])
 
                 break
-            except Exception as e:
-                #  print(e)
+            except Exception:
                 print(f'{r.reason} - {index}')
                 if 'Many' in r.reason:
                     wasBlocked[index] = True
