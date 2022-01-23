@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional, Tuple, Union, overload, Tuple
+from typing import Dict, List, Optional, Tuple, Union, Tuple
 from bs4 import BeautifulSoup as bs4
 import requests
 import re
@@ -32,7 +32,7 @@ def vizerSearch(name:str) -> List[Tuple[str,str,bool]]:
 
     urllist:List[str] = [f'https://vizer.tv/{url["href"]}' for url in animeList.select('.gPoster')] 
     namelist:List[str] = [name.text for name in animeList.find_all('span')] 
-    watchIdlist:List[str] = [re.search(r'\/(.+?\/){4}(.+)\.jpg', link['src'])[2] for link in animeList.find_all('img')]
+    #  watchIdlist:List[str] = [re.search(r'\/(.+?\/){4}(.+)\.jpg', link['src'])[2] for link in animeList.find_all('img')]
 
     infos = animeList.find_all('div', class_='infos')
     isMovie:List[bool] = []
@@ -48,11 +48,13 @@ def vizerEpisodesNum(name:str) -> int:
     resultsFiltered = [result for result in results if result[0] == name]
 
     if len(resultsFiltered):
-        chosenWatchId = resultsFiltered[0][1]
+        #  chosenWatchId = resultsFiltered[0][1]
         chosenIsMovie = resultsFiltered[0][2]
+        movie_url = resultsFiltered[0][1]
     elif len(results):
-        chosenWatchId = results[0][1]
+        #  chosenWatchId = results[0][1]
         chosenIsMovie = results[0][2]
+        movie_url = results[0][1]
     else:
         return 1
 
@@ -62,12 +64,17 @@ def vizerEpisodesNum(name:str) -> int:
 
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Cafari/537.36'}
 
-    r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"getSeasons": chosenWatchId}, headers=headers)
-    rawResult = r.json()['list']
-    seasons = []
-    for index in rawResult:
-        newItem = (rawResult[index]['id'], rawResult[index]['name'])
-        seasons.append(newItem)
+    #  r = requests.post(url="https://vizer.tv/includes/ajax/publicFunctions.php", data={"getSeasons": chosenWatchId}, headers=headers)
+    #  rawResult = r.json()['list']
+    #  seasons = []
+    #  for index in rawResult:
+        #  newItem = (rawResult[index]['id'], rawResult[index]['name'])
+        #  seasons.append(newItem)
+
+    html = requests.get(movie_url).text
+    soup = bs4(html, 'html.parser')
+    season_items = soup.select('.bslider .item')
+    seasons = [(item['data-season-id'], item.text) for item in season_items]
 
     episodescount = 0
     for season in seasons:

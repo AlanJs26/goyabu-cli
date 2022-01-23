@@ -1,5 +1,5 @@
 
-from typing import Callable, Dict, List, Optional, Tuple, Union, overload
+from typing import Dict, List, Optional, Tuple, Union
 from bs4 import BeautifulSoup as bs4
 import requests
 

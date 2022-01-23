@@ -1,7 +1,6 @@
 import re
-from typing import Callable, Dict, List, Optional, Tuple, Union, overload
+from typing import Dict, List, Optional, Union
 from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 
 from scrappers.utils import infoDecorator
@@ -18,7 +17,7 @@ from animdl.core.cli.helpers.processors import process_query
 from animdl.core.cli.helpers.searcher import link 
 from animdl.core.cli.helpers import ensure_extraction, get_check
 from animdl.core.cli.http_client import client
-from animdl.core.config import DEFAULT_PROVIDER
+#  from animdl.core.config import DEFAULT_PROVIDER
 from animdl.core.codebase import providers
 
 possibleOutputs = [

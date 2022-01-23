@@ -1,5 +1,5 @@
 from anilist import Client
-from typing import Callable, Dict, List, Optional, Union, overload
+from typing import Dict, List, Optional, Union 
 from scrappers.utils import infoDecorator
 #  from utils import infoDecorator
 #  from rich import print
