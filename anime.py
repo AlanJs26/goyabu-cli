@@ -186,7 +186,6 @@ else:
     videolist = []
 
 if not args.silent:
-    print(episodesNames)
     table = tt.to_string(
         [[i+1, nameTrunc(episodesNames[i], len(episodesNames[i])+15)] for i in range(len(episodesNames))],
         header=["","Episódios"],
@@ -347,7 +346,7 @@ elif(args.player == 'mpv'):
     sleep(2)
     mpv.command('playlist-play-index', args.episodes[0]-1 if args.episodes[0] and usingdefaulteprange else 0)
     mpv.command('keypress', 'space')
-    #  updateList()
+    updateList()
 elif args.player != 'none':
     os.system(f'{args.player} "{filepath}"')
     updateList()
