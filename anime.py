@@ -9,6 +9,7 @@ from copy import deepcopy
 from rawserver import serveRawText
 from scrappers.utils import runInParallel 
 from shutil import which
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def dir_path(string):
     if string == '': return ''
@@ -176,8 +177,6 @@ if args.update == False:
         episodes = animeInfo('episodes', query=args.name, range=args.episodes, engines=[chosenEngine])[chosenEngine]
     else:
         episodes = animeInfo('episodes', query=args.name, engines=[chosenEngine])[chosenEngine]
-    #  episodesNames = episodes.keys()
-    #  videolist = episodes.values()
     episodesNames = [*episodes.keys()]
     videolist = [*episodes.values()]
 else: 
@@ -258,13 +257,15 @@ if args.update == False:
 else:
     newSessionItem = {}
 
+finishedWorkers = 0
 def updateList():
     global lastSession
     global newSessionItem
     tmpLastSession = deepcopy(lastSession)
     try:
-        for i, key in enumerate(tmpLastSession):
-            episodesNumbers = animeInfo('episodesNum', query=key)
+        def updateWorker(key):
+            global finishedWorkers
+            episodesNumbers = animeInfo('episodesNum', query=key, engines=['goyabu', 'anilist'])
             numGoyabu = episodesNumbers['goyabu']
             numAnilist = episodesNumbers['anilist']
 
@@ -275,7 +276,13 @@ def updateList():
                 newSessionItem['numberOfEpisodes'] =  numAnilist
                 newSessionItem['numberOfEpisodesComputed'] =  numGoyabu
             # simple progress bar
-            print(f"\033[K[{'-'*i}{' '*(len(tmpLastSession)-i)}]    updating the local list", end='\r')           
+            finishedWorkers+=1
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = [executor.submit(updateWorker, key) for _,key in enumerate(tmpLastSession)]
+            for _ in as_completed(futures):
+                print(f"\033[K[{'-'*finishedWorkers}{' '*(len(tmpLastSession)-finishedWorkers)}]    updating the local list", end='\r')           
+
     except KeyboardInterrupt:
         exit()
     lastSession = tmpLastSession
@@ -299,7 +306,7 @@ if which('mpv') == None and args.player != 'none':
     args.player = None
 
 if(args.player == None ):
-    print('MPV is not installed, please specify an alternative player or serve the file over network usin the "none" argument')
+    print('MPV is not installed, please specify an alternative player or serve the file over network using the "--player none" argument')
     exit()
 elif(args.player == 'mpv'):
     from python_mpv_jsonipc import MPV
