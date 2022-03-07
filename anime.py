@@ -42,6 +42,8 @@ parser.add_argument('--player',      action='store', default='mpv', type=str,
                     help='player to run the anime\n         mpv  - use MPV player(default)\n         none - run as server\n         xxxx - use any other player, example: mplayer')
 parser.add_argument('--update',      action='store_true',         
                     help='update the local list')
+parser.add_argument('--synch',      action='store_true',         
+                    help='update the local list synchronously')
 parser.add_argument('--config-dir',    action='store', default='',    type=dir_path, metavar='config directory',
                     help='directory for the watch list')
 
@@ -257,6 +259,45 @@ if args.update == False:
 else:
     newSessionItem = {}
 
+
+def updateListSynchronous():
+    global lastSession
+    global newSessionItem
+    tmpLastSession = deepcopy(lastSession)
+    try:
+        for i,key in enumerate(tmpLastSession):
+            episodesNumbers = animeInfo('episodesNum', query=key, engines=['goyabu', 'anilist'])
+            numGoyabu = episodesNumbers['goyabu']
+            numAnilist = episodesNumbers['anilist']
+
+            tmpLastSession[key]['numberOfEpisodes'] =  numAnilist
+            tmpLastSession[key]['numberOfEpisodesComputed'] =  numGoyabu
+
+            if args.update == False and key == args.name:
+                newSessionItem['numberOfEpisodes'] =  numAnilist
+                newSessionItem['numberOfEpisodesComputed'] =  numGoyabu
+            # simple progress bar
+
+            print(f"\033[K[{'-'*i}{' '*(len(tmpLastSession)-i)}]    updating the local list", end='\r')           
+
+    except KeyboardInterrupt:
+        exit()
+    lastSession = tmpLastSession
+
+    print('local list updated'+' '*(len(tmpLastSession)+12))
+
+    if args.player != 'mpv':
+        if newSessionItem:
+            if args.name in lastSession:
+                lastSession[args.name] = {**lastSession[args.name], **newSessionItem}
+            else:
+                lastSession[args.name] = newSessionItem
+
+        lastSession = {k: lastSession[k] for k in [args.name]+[item for item in lastSession.keys() if item!=args.name]}
+
+        with open(sessionpath, 'w') as rawjson:
+            json.dump(lastSession, rawjson)
+
 finishedWorkers = 0
 def updateList():
     global lastSession
@@ -361,8 +402,9 @@ elif args.player == 'none':
     try:
         if args.update == False:
             runInParallel((serveRawText, fileText), (updateList,))
+        elif args.synch == True:
+            updateListSynchronous()
         else:
             updateList()
     except KeyboardInterrupt:
         exit()
-
