@@ -44,7 +44,6 @@ def goyabuDescription(name:str) -> str:
     html = requests.get(href).text
     soup = bs4(html, 'html.parser')
 
-
     description = soup.find_all(class_='anime-description')[0]
 
     return description.text
@@ -119,19 +118,29 @@ def goyabuEpisodes(name:str, slicelist=None) -> Dict[str, str]:
     ep_namelist = [name.text for name in eplist.find_all('h3')]
     videolist = ['' for _ in range(len(ep_idlist))]
 
-    def getvideourl(url, id):
-        html=requests.get(url).text 
+    def getvideourl(id, i):
+        html=requests.get(f'https://goyabu.com/embed.php?id={id}').text 
         allmatches = re.findall(r'(?<=p",file: ").+?(?="[\n\,]?)', html)
 
         allmatches = list(filter(bool, allmatches))
         if len(allmatches) == 0:
             return 
 
-        videolist[id] = allmatches[-1]
+        videolist[i] = allmatches[0]
+
+    def newGetvideourl(id, i):
+        html=requests.get(f'https://goyabu.com/videos/{id}').text 
+        allmatches = re.findall(r'(?<=file: ").+(?=")', html)
+
+        allmatches = list(filter(bool, allmatches))
+        if len(allmatches) == 0:
+            return 
+
+        videolist[i] = allmatches[0]
 
     with tqdm(total=len(ep_idlist)) as pbar:
         with ThreadPoolExecutor(max_workers=3) as executor:
-            futures = [executor.submit(getvideourl, f'https://goyabu.com/embed.php?id={id}', i) for i,id in enumerate(ep_idlist)]
+            futures = [executor.submit(newGetvideourl, id, i) for i,id in enumerate(ep_idlist)]
             for _ in as_completed(futures):
                 pbar.update(1)
 
@@ -190,3 +199,7 @@ def goyabuInfo(*type:str, query:Optional[str]=None, **kwargs) -> Union[Dict[str,
         outputs['cover'] = goyabuCover(query)
 
     return outputs
+
+if __name__ == "__main__":
+    result = goyabuInfo('episodes', query='yuukaku', range=['0','1'])
+    print(result)
