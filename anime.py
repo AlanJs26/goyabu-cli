@@ -7,10 +7,16 @@ from time import sleep
 from argparse import RawTextHelpFormatter, ArgumentParser
 from copy import deepcopy
 from rawserver import serveRawText
-from scrappers.utils import runInParallel 
+from scrappers.utils import runInParallel, translation 
 from shutil import which
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from locale import getdefaultlocale
+
+sysLang = getdefaultlocale()[0]
+if sysLang:
+    sysLang = sysLang[0:2] 
+else:
+    sysLang = 'pt'
 
 def dir_path(string):
     if string == '': return ''
@@ -109,7 +115,7 @@ if len(lastSession) and args.name == '' and args.yes == False and args.update ==
     results = [[],[],None]
 
     while len(results[1]) != 1 and results[0] != None:
-        results = interactiveTable(tableVals[::-1], ["", "Sessões Anteriores", "Data"], "rcc", behaviour='multiSelectWithText', maxListSize=17, hintText='Nome do Anime[1]: ', highlightRange=(2,2))
+        results = interactiveTable(tableVals[::-1], ["", translation['last_sessions'][sysLang], translation['date'][sysLang]], "rcc", behaviour='multiSelectWithText', maxListSize=17, hintText=translation['hintText'][sysLang], highlightRange=(2,2))
         if results[0] == None: continue
 
         posToRemove = [len(tableVals)-1-item[0] for item in results[1][1:]]
@@ -129,20 +135,15 @@ if args.name == '':
         args.name = '1'
     else:
         try:
-            args.name = str(input('Nome do Anime: '))
+            args.name = str(input(translation['inputText'][sysLang]))
         except KeyboardInterrupt:
             exit()
 
         if args.name == '':
-            print('Insira um nome válido para continuar')
+            print(translation['invalidName'][sysLang])
             exit()
 
 from animeScrapper import animeInfo, searchAnime, enginesByLanguage, capabilities, getCapabilityByLanguage
-sysLang = getdefaultlocale()[0]
-if sysLang:
-    sysLang = sysLang[0:2] 
-else:
-    sysLang = 'pt'
 
 episodeEngines = [key for key, value in capabilities.items() if 'episodes' in value]
 episodesNumEngines = [key for key, value in capabilities.items() if 'episodesNum' in value]
@@ -177,7 +178,7 @@ else:
     namelist = []
 
 if len(namelist) == 0 and args.update == False:
-    print(f'\nNenhum anime com o nome "{args.name}" foi encontrado. Tente outro nome.')
+    print(translation['animeNotFound'][sysLang].format(args.name))
     exit()
 
 # print a interactive table to choose the anime
@@ -185,7 +186,7 @@ if  args.yes == False and args.update == False:
     
     tableValsOrig = [[i+1, namelist[i][0], namelist[i][1]] for i in range(len(namelist))]
     tableVals = [[i+1, nameTrunc(namelist[i][0], 15+len(namelist[i][0])), namelist[i][1]] for i in range(len(namelist))]
-    result = interactiveTable(tableVals, ["", "Animes", "engine"], "rll", maxListSize=17, highlightRange=(2,2))
+    result = interactiveTable(tableVals, ["", "Anime", "engine"], "rll", maxListSize=17, highlightRange=(2,2))
     args.name = tableValsOrig[result[0][0]-1][1]
     chosenEngine = result[0][-1]
 
@@ -206,7 +207,7 @@ else:
 if not args.silent:
     table = tt.to_string(
         [[i+1, nameTrunc(episodesNames[i], len(episodesNames[i])+15)] for i in range(len(episodesNames))],
-        header=["","Episódios"],
+        header=["",translation['episodes'][sysLang]],
         style=tt.styles.rounded,
         alignment="rl",
     )
@@ -216,13 +217,9 @@ if not args.silent:
 
 if not any(args.episodes):
     if not args.silent:
-        print('''
-        n - único episódio
-        n:n - intervalo de episódios
-        todos - todos os episódios
-        ''')
+        print(translation['sliceHelp'][sysLang])
     try:
-        args.episodes = str(input('Episódios para assistir [todos]: ')).split(':') if not args.yes else ['todos']
+        args.episodes = str(input(translation['sliceHint'][sysLang])).split(':') if not args.yes else ['todos']
         args.episodes.append('')
     except KeyboardInterrupt:
         print('')
@@ -249,7 +246,7 @@ for video in videolist:
 folderpath = os.path.join(os.path.expanduser('~'), "Downloads/anime-playlists/")
 filepath = os.path.join(folderpath, f'{args.name}.m3u')
 
-if not args.silent: print(f'Salvando em "{filepath}"')
+if not args.silent: print(translation['savingIn'][sysLang].format(filepath))
 
 # if the destiny folder dont exits, create it
 if not os.path.exists(folderpath):
@@ -295,13 +292,13 @@ def updateListSynchronous():
                 newSessionItem['numberOfEpisodesComputed'] =  numChosenEngine
             # simple progress bar
 
-            print(f"\033[K[{'-'*i}{' '*(len(tmpLastSession)-i)}]    updating the local list", end='\r')           
+            print(f"\033[K[{'-'*i}{' '*(len(tmpLastSession)-i)}]   {translation['listUpdating'][sysLang]}", end='\r')           
 
     except KeyboardInterrupt:
         exit()
     lastSession = tmpLastSession
 
-    print('local list updated'+' '*(len(tmpLastSession)+12))
+    print(translation['listUpdated'][sysLang]+' '*(len(tmpLastSession)+12))
 
     if args.player != 'mpv':
         if newSessionItem:
@@ -339,13 +336,13 @@ def updateList():
         with ThreadPoolExecutor(max_workers=8) as executor:
             futures = [executor.submit(updateWorker, key) for _,key in enumerate(tmpLastSession)]
             for _ in as_completed(futures):
-                print(f"\033[K[{'-'*finishedWorkers}{' '*(len(tmpLastSession)-finishedWorkers)}]    updating the local list", end='\r')           
+                print(f"\033[K[{'-'*finishedWorkers}{' '*(len(tmpLastSession)-finishedWorkers)}]    {translation['listUpdating'][sysLang]}", end='\r')           
 
     except KeyboardInterrupt:
         exit()
     lastSession = tmpLastSession
 
-    print('local list updated'+' '*(len(tmpLastSession)+12))
+    print(translation['listUpdated'][sysLang]+' '*(len(tmpLastSession)+12))
 
     if args.player != 'mpv':
         if newSessionItem:
@@ -364,7 +361,7 @@ if which('mpv') == None and args.player != 'none':
     args.player = None
 
 if(args.player == None ):
-    print('MPV is not installed, please specify an alternative player or serve the file over network using the "--player none" argument')
+    print(translation['mpvNotFound'][sysLang])
     exit()
 elif(args.player == 'mpv'):
     from python_mpv_jsonipc import MPV

@@ -59,3 +59,67 @@ def runInParallel(*fns):
         proc.append(p)
     for p in proc:
         p.join()
+
+translation = {
+    'last_sessions': {
+        'en': 'Last Sessions',
+        'pt': 'Sessões Anteriores'
+    },
+    'date': {
+        'en': 'Date',
+        'pt': 'Data'
+    },
+    'hintText': {
+        'en': 'Anime Name[1]: ',
+        'pt': 'Nome do Anime[1]: '
+    },
+    'inputText': {
+        'en': 'Anime Name',
+        'pt': 'Nome do Anime:'
+    },
+    'invalidName': {
+        'en': 'Please enter a valid name to continue',
+        'pt': 'Insira um nome válido para continuar'
+    },
+    'animeNotFound': {
+        'en': '\nNo anime with the name "{}" was found. Try another name.',
+        'pt': '\nNenhum anime com o nome "{}" foi encontrado. Tente outro nome.'
+    },
+    'episodes': {
+        'en': 'Episodes',
+        'pt': 'Episódios'
+    },
+    'sliceHelp': {
+        'en': '''
+        n - single episode
+        n:n - range of episodes
+        all - all episodes
+        ''',
+        'pt': '''
+        n - único episódio
+        n:n - intervalo de episódios
+        todos - todos os episódios
+        '''
+    },
+    'sliceHint': {
+        'en': 'Episodes[all]:',
+        'pt': 'Episódios para assistir [todos]: ' 
+    },
+    'savingIn': {
+        'en': 'Saving in "{}"',
+        'pt': 'Salvando em "{}"'
+    },
+    'listUpdated': {
+        'en': 'local list updated',
+        'pt': 'lista de episódios sincronizada'
+    },
+    'listUpdating': {
+        'en': 'synching the local list',
+        'pt': 'sincronizando a lista de episódios'
+    },
+    'mpvNotFound': {
+        'en': 'MPV is not installed, please specify an alternative player or serve the file over network using the "--player none" argument',
+        'pt': 'O MPV não está instalado, especifique um player alternativo ou transmita o arquivo pela rede local usando o argumento "--player none" '
+    },
+}
+
