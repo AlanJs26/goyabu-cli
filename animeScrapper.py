@@ -1,5 +1,4 @@
-#  from './scrappers/goyabu.py' import goyabuSearch
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, Optional
 from scrappers.goyabu import goyabuInfo
 from scrappers.aniList import anilistInfo
 from scrappers.vizer import vizerInfo
@@ -16,6 +15,7 @@ infoAlias: Dict[str, Callable] = {
 capabilities = {name:info('capabilities') for name, info in infoAlias.items()}
 
 searchEngines = [key for key, value in capabilities.items() if 'search' in value]
+
 
 def searchAnime(name:str, engines = searchEngines):
     difference = list(set(engines).difference(searchEngines))
@@ -53,11 +53,40 @@ def animeInfo(*types:str, query:Optional[str]=None, engines = searchEngines, **k
 
     return outputs
 
+def getCapabilityByLanguage(capability:str):
+    capabilityByLanguage = {}
+
+    for name, alias in infoAlias.items():
+        if capability not in capabilities[name]: continue
+
+        lang = alias('language')
+        if lang not in capabilityByLanguage:
+            capabilityByLanguage[lang] = [name]
+            continue
+        capabilityByLanguage[lang].append(name)
+
+    return capabilityByLanguage
+
+enginesByLanguage = {}
+
+for name, alias in infoAlias.items():
+    if 'episodes' not in capabilities[name]: continue
+
+    lang = alias('language')
+    if lang not in enginesByLanguage:
+        enginesByLanguage[lang] = [name]
+        continue
+    enginesByLanguage[lang].append(name)
+
+
+#  episodes = filter(lambda x : 'episodes' in capabilities[x], capabilities)
 
 if __name__ == "__main__":
     #  print(searchAnime('boku'))
     #  print(infoAlias['goyabu']('episodes', query='komi'))
-    print(animeInfo('episodesNum', query='loki'))
+    #  print(animeInfo('episodesNum', query='loki'))
+    #  print(list(enginesByLanguage))
+    print(enginesByLanguage)
     #  print(searchAnime('asdffsa'))
 
     #  print(searchEngines)

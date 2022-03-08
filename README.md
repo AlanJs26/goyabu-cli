@@ -6,6 +6,8 @@
 ![Novo anime](./img/record1.gif)
 ![Retomando uma sessão anterior](./img/record2.gif)
 
+> This project depends on [animdl](https://github.com/justfoolingaround/animdl) for the English anime sources
+
 <!--digite `anime` e siga as instruções para utilizar.-->
 ## 🚀 How to use
 
@@ -36,7 +38,9 @@ Requirements:
 
 Clone this repository and run the install script
 
-`git clone 'https://github.com/AlanJs26/goyabu-cli' && cd goyabu-cli && ./install.sh`
+```bash
+git clone 'https://github.com/AlanJs26/goyabu-cli' && cd goyabu-cli && ./install.sh
+```
 
 <!--Com isso digitando `anime` no terminal, o programa deve funcionar-->
 
@@ -45,20 +49,23 @@ To run the program type `anime` in the terminal
 <!--## Instalação manual-->
 ## ⚙ Manual installation
 
-Clone this repository `git clone 'https://github.com/AlanJs26/goyabu-cli' && cd goyabu-cli` 
+Clone this repository 
+```bash
+git clone 'https://github.com/AlanJs26/goyabu-cli' && cd goyabu-cli
+```
 
-Install all pythons dependencies `pip install -r requirements.txt`
+Install all pythons dependencies 
+```bash
+pip install -r requirements.txt
+```
 
 <!--Assim o programa pode ser executado com `python anime.py` -->
-To run the program, type `python anime.py` in the program folder or add to system path
+To run the program, type `python anime.py` in the program folder or add to your system path
 
-## ⚠️ Warning
+## Available sources 
 
-Currently all animes are being indexed through [Goyabu](https://goyabu.com), so all subtitles are in **Portuguese**  
-
-I have plans to add **English** support along with TV shows and movies, but this will take a while  
-
-
-
-
-
+| Source                         | Description                                                        | Language   |
+| ------------------------------ | ------------------------------------------------------------------ | ---------- |
+| [goyabu](https://goyabu.com/)                         | website used to watch anime                                        | Portuguese |
+| [vizer](https://vizer.tv/)                          | website used to watch movies, tv shows and animes                  | Portuguese |
+| [animdl](https://github.com/justfoolingaround/animdl)                         | a project that extract anime episodes from various different sites | English    |

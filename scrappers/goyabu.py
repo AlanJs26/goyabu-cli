@@ -18,6 +18,7 @@ possibleOutputs = [
     'description',
     'status',
     'cover',
+    'language'
 ]
 
 def goyabuSearch(name:str) -> List[str]:
@@ -197,6 +198,9 @@ def goyabuInfo(*type:str, query:Optional[str]=None, **kwargs) -> Union[Dict[str,
 
     if 'cover' in type and query:
         outputs['cover'] = goyabuCover(query)
+
+    if 'language' in type:
+        outputs['language'] = 'pt'
 
     return outputs
 

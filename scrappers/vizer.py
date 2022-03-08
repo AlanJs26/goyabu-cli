@@ -16,6 +16,7 @@ possibleOutputs = [
     'search',
     'episodes',
     'episodesNum',
+    'language'
 ]
 
 
@@ -257,6 +258,9 @@ def vizerInfo(*type:str, query:Optional[str]=None, **kwargs) -> Union[Dict[str, 
             outputs['episodes'] = vizerEpisodes(query, slicelist=kwargs['range']) 
         else:
             outputs['episodes'] = vizerEpisodes(query) 
+
+    if 'language' in type:
+        outputs['language'] = 'pt'
 
     return outputs
 

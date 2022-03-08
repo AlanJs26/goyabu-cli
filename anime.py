@@ -10,6 +10,7 @@ from rawserver import serveRawText
 from scrappers.utils import runInParallel 
 from shutil import which
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from locale import getdefaultlocale
 
 def dir_path(string):
     if string == '': return ''
@@ -136,7 +137,23 @@ if args.name == '':
             print('Insira um nome válido para continuar')
             exit()
 
-from animeScrapper import animeInfo, searchAnime
+from animeScrapper import animeInfo, searchAnime, enginesByLanguage, capabilities, getCapabilityByLanguage
+sysLang = getdefaultlocale()[0]
+if sysLang:
+    sysLang = sysLang[0:2] 
+else:
+    sysLang = 'pt'
+
+episodeEngines = [key for key, value in capabilities.items() if 'episodes' in value]
+episodesNumEngines = [key for key, value in capabilities.items() if 'episodesNum' in value]
+
+availableEngines = enginesByLanguage[sysLang] if sysLang in enginesByLanguage else episodeEngines 
+if 'episodesNum' in capabilities[availableEngines[0]]:
+    availableNumEngines = availableEngines[0]
+else:
+    availableNumEngines = getCapabilityByLanguage('episodesNum')
+    availableNumEngines = availableNumEngines[sysLang][0] if sysLang in availableNumEngines else episodesNumEngines[0] 
+
 
 #  If users choses one of last session items
 if args.name.isdigit() and int(args.name) <= len(lastSession):
@@ -147,7 +164,7 @@ if args.name.isdigit() and int(args.name) <= len(lastSession):
         args.episodes = [str(lastSession[args.name]['lastep']), '']
 
 if args.update == False:
-    rawnamelist = searchAnime(args.name, engines=['goyabu', 'vizer', 'animdl'])[0]
+    rawnamelist = searchAnime(args.name, engines=availableEngines)[0]
     namelist = []
     for engine in rawnamelist:
         for item in rawnamelist[engine]:
@@ -266,16 +283,16 @@ def updateListSynchronous():
     tmpLastSession = deepcopy(lastSession)
     try:
         for i,key in enumerate(tmpLastSession):
-            episodesNumbers = animeInfo('episodesNum', query=key, engines=['goyabu', 'anilist'])
-            numGoyabu = episodesNumbers['goyabu']
+            episodesNumbers = animeInfo('episodesNum', query=key, engines=[availableNumEngines, 'anilist'])
+            numChosenEngine = episodesNumbers[availableNumEngines]
             numAnilist = episodesNumbers['anilist']
 
             tmpLastSession[key]['numberOfEpisodes'] =  numAnilist
-            tmpLastSession[key]['numberOfEpisodesComputed'] =  numGoyabu
+            tmpLastSession[key]['numberOfEpisodesComputed'] =  numChosenEngine
 
             if args.update == False and key == args.name:
                 newSessionItem['numberOfEpisodes'] =  numAnilist
-                newSessionItem['numberOfEpisodesComputed'] =  numGoyabu
+                newSessionItem['numberOfEpisodesComputed'] =  numChosenEngine
             # simple progress bar
 
             print(f"\033[K[{'-'*i}{' '*(len(tmpLastSession)-i)}]    updating the local list", end='\r')           
@@ -306,16 +323,16 @@ def updateList():
     try:
         def updateWorker(key):
             global finishedWorkers
-            episodesNumbers = animeInfo('episodesNum', query=key, engines=['goyabu', 'anilist'])
-            numGoyabu = episodesNumbers['goyabu']
+            episodesNumbers = animeInfo('episodesNum', query=key, engines=[availableNumEngines, 'anilist'])
+            numChosenEngine = episodesNumbers[availableNumEngines]
             numAnilist = episodesNumbers['anilist']
 
             tmpLastSession[key]['numberOfEpisodes'] =  numAnilist
-            tmpLastSession[key]['numberOfEpisodesComputed'] =  numGoyabu
+            tmpLastSession[key]['numberOfEpisodesComputed'] =  numChosenEngine
 
             if args.update == False and key == args.name:
                 newSessionItem['numberOfEpisodes'] =  numAnilist
-                newSessionItem['numberOfEpisodesComputed'] =  numGoyabu
+                newSessionItem['numberOfEpisodesComputed'] =  numChosenEngine
             # simple progress bar
             finishedWorkers+=1
 
