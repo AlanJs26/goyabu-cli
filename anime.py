@@ -394,10 +394,16 @@ elif(args.player == 'mpv'):
     sleep(2)
     mpv.command('playlist-play-index', args.episodes[0]-1 if args.episodes[0] and usingdefaulteprange else 0)
     mpv.command('keypress', 'space')
-    updateList()
+    if args.synch == True:
+        updateListSynchronous()
+    else:
+        updateList()
 elif args.player != 'none':
     os.system(f'{args.player} "{filepath}"')
-    updateList()
+    if args.synch == True:
+        updateListSynchronous()
+    else:
+        updateList()
 elif args.player == 'none':
     try:
         if args.update == False:
