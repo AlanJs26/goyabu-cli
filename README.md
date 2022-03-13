@@ -36,10 +36,10 @@ Requirements:
 
 <!--Clone este repositório e, na pasta do programa, execute o comando `bash install.sh`-->
 
-Clone this repository and run the install script
+Installation can be done using the install script:
 
 ```bash
-git clone 'https://github.com/AlanJs26/goyabu-cli' && cd goyabu-cli && ./install.sh
+bash <(curl -s https://raw.githubusercontent.com/AlanJs26/goyabu-cli/main/install.sh)
 ```
 
 <!--Com isso digitando `anime` no terminal, o programa deve funcionar-->
@@ -48,6 +48,8 @@ To run the program type `anime` in the terminal
 
 <!--## Instalação manual-->
 ## ⚙ Manual installation
+
+Install Python 3, MPV and git 
 
 Clone this repository 
 ```bash
