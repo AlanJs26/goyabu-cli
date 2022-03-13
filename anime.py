@@ -51,6 +51,8 @@ parser.add_argument('--update',      action='store_true',
                     help='update the local list')
 parser.add_argument('--synch',      action='store_true',         
                     help='update the local list synchronously')
+parser.add_argument('--server',      action='store_true',         
+                    help='serves a list of animes as a m3u playlist through the network. Use colons (,) to split each anime')
 parser.add_argument('--config-dir',    action='store', default='',    type=dir_path, metavar='config directory',
                     help='directory for the watch list')
 
@@ -62,6 +64,27 @@ if args.update == True:
 
 args.name = ' '.join(args.name)
 chosenEngine = 'goyabu'
+
+
+if args.server == True:
+    from animeScrapper import searchAnime, enginesByLanguage, capabilities, getCapabilityByLanguage
+    from rawserver import generatePlaylist
+    animelist = args.name.split(',')
+
+    episodeEngines = [key for key, value in capabilities.items() if 'episodes' in value and 'search' in value]
+
+    availableEngines = enginesByLanguage[sysLang] if sysLang in enginesByLanguage else episodeEngines 
+
+    animelist = [searchAnime(anime, engines=availableEngines)[1][0] for anime in animelist]
+    playlistText = generatePlaylist(animelist)
+
+    print('Anime Server\n')
+    for anime in animelist:
+        print(anime)
+    print('')
+
+    serveRawText(playlistText)
+    exit()
 
 
 

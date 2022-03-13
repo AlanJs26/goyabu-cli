@@ -66,11 +66,8 @@ def animdlEpisodes(name:str, anime_url=None, slicelist=None) -> Dict[str, str]:
 
     if anime_url == None:
         logger = logging.getLogger('grabber')
-        anime, provider = process_query(
-            session, name, logger, auto=None, auto_index=None)
-        #  print(anime.get('name'))
-        #  print("{}/{}".format(provider, logger.name))
-        #  print("Initializing grabbing session.")
+        anime, __provider__ = process_query(
+            session, name, logger, provider='animixplay', auto=True)
         anime_url = anime.get('anime_url')
         name = anime.get('name')
 
@@ -123,9 +120,9 @@ def animdlInfo(*type:str, query:Optional[str]=None, **kwargs) -> Union[Dict[str,
 
 if __name__ == "__main__":
 
-    results = animdlSearch('yuukaku')
-    print(results)
+    #  results = animdlSearch('yuukaku')
+    #  print(results)
 
-    results = animdlEpisodes(results[0]['name'], results[0]['anime_url'])
+    results = animdlEpisodes('yuukaku')
     print(results)
 

@@ -120,16 +120,6 @@ def goyabuEpisodes(name:str, slicelist=None) -> Dict[str, str]:
     videolist = ['' for _ in range(len(ep_idlist))]
 
     def getvideourl(id, i):
-        html=requests.get(f'https://goyabu.com/embed.php?id={id}').text 
-        allmatches = re.findall(r'(?<=p",file: ").+?(?="[\n\,]?)', html)
-
-        allmatches = list(filter(bool, allmatches))
-        if len(allmatches) == 0:
-            return 
-
-        videolist[i] = allmatches[0]
-
-    def newGetvideourl(id, i):
         html=requests.get(f'https://goyabu.com/videos/{id}').text 
         allmatches = re.findall(r'(?<=file: ").+(?=")', html)
 
@@ -141,7 +131,7 @@ def goyabuEpisodes(name:str, slicelist=None) -> Dict[str, str]:
 
     with tqdm(total=len(ep_idlist)) as pbar:
         with ThreadPoolExecutor(max_workers=3) as executor:
-            futures = [executor.submit(newGetvideourl, id, i) for i,id in enumerate(ep_idlist)]
+            futures = [executor.submit(getvideourl, id, i) for i,id in enumerate(ep_idlist)]
             for _ in as_completed(futures):
                 pbar.update(1)
 
@@ -205,5 +195,5 @@ def goyabuInfo(*type:str, query:Optional[str]=None, **kwargs) -> Union[Dict[str,
     return outputs
 
 if __name__ == "__main__":
-    result = goyabuInfo('episodes', query='yuukaku', range=['0','1'])
+    result = goyabuInfo('episodes', query='yuukaku', range=['1','1'])
     print(result)

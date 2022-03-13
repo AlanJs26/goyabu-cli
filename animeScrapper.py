@@ -67,16 +67,17 @@ def getCapabilityByLanguage(capability:str):
 
     return capabilityByLanguage
 
-enginesByLanguage = {}
+#  enginesByLanguage = {}
+enginesByLanguage = getCapabilityByLanguage('episodes')
 
-for name, alias in infoAlias.items():
-    if 'episodes' not in capabilities[name]: continue
+#  for name, alias in infoAlias.items():
+    #  if 'episodes' not in capabilities[name]: continue
 
-    lang = alias('language')
-    if lang not in enginesByLanguage:
-        enginesByLanguage[lang] = [name]
-        continue
-    enginesByLanguage[lang].append(name)
+    #  lang = alias('language')
+    #  if lang not in enginesByLanguage:
+        #  enginesByLanguage[lang] = [name]
+        #  continue
+    #  enginesByLanguage[lang].append(name)
 
 
 #  episodes = filter(lambda x : 'episodes' in capabilities[x], capabilities)
@@ -84,9 +85,9 @@ for name, alias in infoAlias.items():
 if __name__ == "__main__":
     #  print(searchAnime('boku'))
     #  print(infoAlias['goyabu']('episodes', query='komi'))
-    #  print(animeInfo('episodesNum', query='loki'))
+    print(animeInfo('episodes', query='shingeki', range=['1', '1']))
     #  print(list(enginesByLanguage))
-    print(enginesByLanguage)
+    #  print(enginesByLanguage)
     #  print(searchAnime('asdffsa'))
 
     #  print(searchEngines)
