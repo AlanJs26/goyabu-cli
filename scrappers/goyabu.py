@@ -1,4 +1,6 @@
+import os
 from typing import Dict, List, Optional, Union
+from difflib import SequenceMatcher
 from bs4 import BeautifulSoup as bs4
 import requests
 import re
@@ -6,6 +8,7 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from scrappers.utils import infoDecorator
 #  from utils import infoDecorator
+
 
 hreflist = []
 namelist = []
@@ -18,7 +21,9 @@ possibleOutputs = [
     'description',
     'status',
     'cover',
-    'language'
+    'language',
+    'category'
+
 ]
 
 def goyabuSearch(name:str) -> List[str]:
@@ -29,8 +34,11 @@ def goyabuSearch(name:str) -> List[str]:
     global namelist
 
     animeList = soup.find(class_='episode-container')
-    hreflist = [link['href'] for link in animeList.find_all('a')]
-    namelist = [name.text for name in animeList.find_all('h3')]
+    results = zip([link['href'] for link in animeList.find_all('a')], [name.text for name in animeList.find_all('h3')])
+    results = sorted(results, key=lambda x: SequenceMatcher(None, name, x[1]).ratio(), reverse=True)
+
+    hreflist, namelist = [[name for name, _    in results],
+                          [href for _   , href in results]]
     
     return namelist
 
@@ -92,11 +100,15 @@ def goyabuStatus(name:str) -> str:
 
 def goyabuEpisodes(name:str, slicelist=None) -> Dict[str, str]:
 
-    if slicelist == None or type(slicelist) != list or len(slicelist) != 2:
+    if slicelist == None or type(slicelist) != list or len(slicelist) > 2 or len(slicelist) == 0:
         slicelist = [None, None]
+    elif len(slicelist) == 1:
+        slicelist[0] = int(slicelist[0]) if slicelist[0].isdigit() else None
+        slicelist.append(int(slicelist[0])+1 if slicelist else None)
     else:
         slicelist = [int(i) if i.isdigit() else None for i in slicelist]
-        slicelist[1] = slicelist[1] and slicelist[1]+1
+        #  slicelist[1] = slicelist[1] and slicelist[1]+1
+
 
 
     global videolist
@@ -105,9 +117,12 @@ def goyabuEpisodes(name:str, slicelist=None) -> Dict[str, str]:
 
     if len(namelist) == 0 or name not in namelist:
         goyabuSearch(name)
-        href = hreflist[0]
+        matched = list(filter(lambda x:x==name, hreflist))
+        print(matched)
+        href = matched[0] if len(matched) else hreflist[0]
     else:
         href = hreflist[namelist.index(name)]
+        print(namelist.index(name))
 
     html = requests.get(href).text
     soup = bs4(html, 'html.parser')
@@ -116,12 +131,15 @@ def goyabuEpisodes(name:str, slicelist=None) -> Dict[str, str]:
 
     ep_hreflist = [ep['href'] for ep in eplist.find_all('a')][slice(*slicelist)]
     ep_idlist = [href[26:-1] for href in ep_hreflist]
-    ep_namelist = [name.text for name in eplist.find_all('h3')]
+    ep_namelist = [name.text for name in eplist.find_all('h3')][slice(*slicelist)]
     videolist = ['' for _ in range(len(ep_idlist))]
 
     def getvideourl(id, i):
-        html=requests.get(f'https://goyabu.com/videos/{id}').text 
-        allmatches = re.findall(r'(?<=file: ").+(?=")', html)
+        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+
+        html=requests.get(f'https://goyabu.com/videos/{id}', headers=headers).text 
+        #  allmatches = re.findall(r'(?<=file: ").+(?=")', html)
+        allmatches = re.findall(r"(?<=src=').+kanra\.dev.+?(?=')", html)
 
         allmatches = list(filter(bool, allmatches))
         if len(allmatches) == 0:
@@ -192,8 +210,12 @@ def goyabuInfo(*type:str, query:Optional[str]=None, **kwargs) -> Union[Dict[str,
     if 'language' in type:
         outputs['language'] = 'pt'
 
+    if 'category' in type:
+        outputs['category'] = 'anime'
+
     return outputs
 
 if __name__ == "__main__":
-    result = goyabuInfo('episodes', query='yuukaku', range=['1','1'])
+    #  result = goyabuInfo('episodes', query='yuukaku', range=['3'])
+    result = goyabuInfo('episodes', query='yuukaku')
     print(result)

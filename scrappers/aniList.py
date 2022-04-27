@@ -8,7 +8,9 @@ possibleOutputs = [
     'search',
     'episodesNum',
     'status',
-    'language'
+    'language',
+    'category'
+
 ]
 
 anilistClient = Client()
@@ -61,6 +63,9 @@ def anilistInfo(*type:str, query:Optional[str]=None, **kwargs) -> Union[Dict[str
 
     if 'language' in type:
         outputs['language'] = 'en'
+
+    if 'category' in type:
+        outputs['category'] = 'anime'
 
     return outputs
 if __name__ == "__main__":

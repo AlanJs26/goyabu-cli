@@ -24,7 +24,9 @@ possibleOutputs = [
     'search',
     'episodes',
     'episodesNum',
-    'language'
+    'language',
+    'category'
+
 ]
 
 session = client
@@ -115,6 +117,9 @@ def animdlInfo(*type:str, query:Optional[str]=None, **kwargs) -> Union[Dict[str,
 
     if 'language' in type:
         outputs['language'] = 'en'
+
+    if 'category' in type:
+        outputs['category'] = 'anime'
 
     return outputs
 

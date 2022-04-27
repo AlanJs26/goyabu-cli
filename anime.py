@@ -1,5 +1,5 @@
 import os, errno
-from datetime import datetime
+from datetime import datetime,date
 import json
 import termtables as tt
 from dropdown import interactiveTable, bcolors, isWindows
@@ -7,10 +7,11 @@ from time import sleep
 from argparse import RawTextHelpFormatter, ArgumentParser
 from copy import deepcopy
 from rawserver import serveRawText
-from scrappers.utils import runInParallel, translation 
+from scrappers.utils import runInParallel, translation, nameTrunc, dir_path 
 from shutil import which
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from locale import getdefaultlocale
+
 
 sysLang = getdefaultlocale()[0]
 if sysLang:
@@ -18,13 +19,6 @@ if sysLang:
 else:
     sysLang = 'pt'
 
-def dir_path(string):
-    if string == '': return ''
-    new_string = os.path.expanduser(string)
-    if os.path.isdir(new_string):
-        return new_string
-    else:
-        raise NotADirectoryError(string)
 
 usingdefaulteprange = True
 def episoderangeparser(string):
@@ -65,11 +59,25 @@ if args.update == True:
 args.name = ' '.join(args.name)
 chosenEngine = 'goyabu'
 
+# read last session file, if don't exist create one
+lastSession={}
+if args.config_dir != '':
+    sessionpath = args.config_dir + ('/' if args.config_dir[-1] != '/' else '') + '.anime-lastsession.json'
+else:
+    sessionpath = os.path.join(os.path.dirname(__file__), '.anime-lastsession.json')
+if os.path.isfile(sessionpath):
+    with open(sessionpath) as rawjson:
+        lastSession = json.load(rawjson)
+else:
+    with open(sessionpath, 'w') as rawjson:
+        json.dump({}, rawjson)
 
+# Run the m3u8 server
 if args.server == True:
     from animeScrapper import searchAnime, enginesByLanguage, capabilities, getCapabilityByLanguage
     from rawserver import generatePlaylist
-    animelist = args.name.split(',')
+
+    animelist = [list(lastSession.keys())[int(anime)] if anime.isdigit() else anime for anime in args.name.split(',')]
 
     episodeEngines = [key for key, value in capabilities.items() if 'episodes' in value and 'search' in value]
 
@@ -86,30 +94,8 @@ if args.server == True:
     serveRawText(playlistText)
     exit()
 
-
-
-# read last session file, if don't exist create one
-lastSession={}
-if args.config_dir != '':
-    sessionpath = args.config_dir + ('/' if args.config_dir[-1] != '/' else '') + '.anime-lastsession.json'
-else:
-    sessionpath = os.path.join(os.path.dirname(__file__), '.anime-lastsession.json')
-if os.path.isfile(sessionpath):
-    with open(sessionpath) as rawjson:
-        lastSession = json.load(rawjson)
-else:
-    with open(sessionpath, 'w') as rawjson:
-        json.dump({}, rawjson)
-
-def nameTrunc(text, length):
-    columns = os.get_terminal_size().columns
-    if columns < length:
-        nameSlice = slice(None, len(text)-(length-columns))
-        return text[nameSlice]+'...'
-    return text
-
 if len(lastSession) == 0 and args.update:
-    print('the watch list if empty. Watch a episode first.')
+    print('the watch list is empty. Watch a episode first.')
     exit()
 
 # Format last session table, highligthing completed animes
@@ -117,20 +103,27 @@ tableVals = []
 for i,name in enumerate(lastSession):
     eps = lastSession[name]["numberOfEpisodes"]
     epsComputed = lastSession[name]["numberOfEpisodesComputed"]
+
     watchDate = lastSession[name]["date"]
+    parsedDate = [int(item) for item in watchDate.split('-')]
+    diff = datetime.date(datetime.now()) - date(parsedDate[2], parsedDate[1], parsedDate[0])
+    watchDate = f'{diff.days} {translation["daysAgo"][sysLang]}'
+
     lastep = lastSession[name]["lastep"]
+
+    offset = 38
+
     if lastep == epsComputed and lastep < eps:
         tableVals.append(
-[i+1, f'{bcolors["grey"]}{nameTrunc(name, 45+len(name))} - Episódio {lastep} [{epsComputed}/{eps}]{bcolors["end"]}', watchDate]
+[i+1, f'{bcolors["grey"]}{nameTrunc(name, offset+len(name)+len(watchDate))} - Episódio {lastep} [{epsComputed}/{eps}]{bcolors["end"]}', watchDate]
         )
     elif lastep < eps:
         tableVals.append(
-[i+1, f'{nameTrunc(name, 45+len(name))} - Episódio {lastep} [{epsComputed}/{eps}]', watchDate]
+[i+1, f'{nameTrunc(name, offset+len(name)+len(watchDate))} - Episódio {lastep} [{epsComputed}/{eps}]', watchDate]
         )
     else:
         tableVals.append(
-[i+1, f'{bcolors["green"]}{nameTrunc(name, 40+len(name))} - Completo{bcolors["end"]}', watchDate]
-#  [i+1, f'{bcolors["green"]}{nameTrunc(name, 45+len(name))} - Completo [{epsComputed}/{eps}]{bcolors["end"]}', watchDate]
+[i+1, f'{bcolors["green"]}{nameTrunc(name, offset-5+len(name)+len(watchDate))} - {translation["complete"][sysLang]}{bcolors["end"]}', watchDate]
         )
 
 # Print the interactive Last Session table and remove the selected items
@@ -166,17 +159,21 @@ if args.name == '':
             print(translation['invalidName'][sysLang])
             exit()
 
-from animeScrapper import animeInfo, searchAnime, enginesByLanguage, capabilities, getCapabilityByLanguage
+from animeScrapper import animeInfo, searchAnime, enginesByLanguage, capabilities, categories, getCapabilityByLanguage
 
 episodeEngines = [key for key, value in capabilities.items() if 'episodes' in value]
 episodesNumEngines = [key for key, value in capabilities.items() if 'episodesNum' in value]
 
 availableEngines = enginesByLanguage[sysLang] if sysLang in enginesByLanguage else episodeEngines 
-if 'episodesNum' in capabilities[availableEngines[0]]:
-    availableNumEngines = availableEngines[0]
-else:
-    availableNumEngines = getCapabilityByLanguage('episodesNum')
-    availableNumEngines = availableNumEngines[sysLang][0] if sysLang in availableNumEngines else episodesNumEngines[0] 
+#  if 'episodesNum' in capabilities[availableEngines[0]]:
+    #  availableNumEngine = availableEngines[0]
+#  else:
+    #  availableNumEngine = getCapabilityByLanguage('episodesNum')
+    #  availableNumEngine = availableNumEngine[sysLang][0] if sysLang in availableNumEngine else episodesNumEngines[0] 
+
+availableNumEngines = getCapabilityByLanguage('episodesNum')
+#  availableNumEngine = availableNumEngine[sysLang][0] if sysLang in availableNumEngine else episodesNumEngines[0] 
+availableNumEngines = availableNumEngines[sysLang] if sysLang in availableNumEngines else episodesNumEngines 
 
 
 #  If users choses one of last session items
@@ -206,12 +203,32 @@ if len(namelist) == 0 and args.update == False:
 
 # print a interactive table to choose the anime
 if  args.yes == False and args.update == False:
-    
-    tableValsOrig = [[i+1, namelist[i][0], namelist[i][1]] for i in range(len(namelist))]
-    tableVals = [[i+1, nameTrunc(namelist[i][0], 15+len(namelist[i][0])), namelist[i][1]] for i in range(len(namelist))]
+
+    mergednamelist = []
+    verifiednames = []
+
+    for item, engine in namelist:
+        if item in verifiednames:
+            continue
+
+        accumEngines = [engine]
+        verifiednames.append(item)
+
+        for inneritem, innerengine in namelist:
+            if inneritem == item and engine != innerengine:
+                accumEngines.append(innerengine)
+        mergednamelist.append([item, accumEngines])
+
+    tableValsOrig = [[i+1,           title,                 ', '.join(engineNames)] for i, (title, engineNames) in enumerate(mergednamelist)]
+    tableVals     = [[i+1, nameTrunc(title, 15+len(title)), ', '.join(engineNames)] for i, (title, engineNames) in enumerate(mergednamelist)]
+
     result = interactiveTable(tableVals, ["", "Anime", "engine"], "rll", maxListSize=17, highlightRange=(2,2))
     args.name = tableValsOrig[result[0][0]-1][1]
     chosenEngine = result[0][-1]
+
+    if len(chosenEngine.split(', '))>1:
+        result = interactiveTable([[engine] for engine in chosenEngine.split(', ')], ["engine"], "l", maxListSize=17, highlightRange=(0,1))
+        chosenEngine = result[0][-1]
 
 
 if args.update == False:
@@ -286,7 +303,7 @@ if args.update == False:
 if args.update == False:
     newSessionItem = {
         #  'episodes': [[namelist[i], videolist[i]] for i in range(len(namelist))],
-        'date': datetime.now().strftime('%d-%m-%y'),
+        'date': datetime.now().strftime('%d-%m-%Y'),
         'numberOfEpisodesComputed': len(episodesNames) if usingdefaulteprange else animeInfo('episodesNum', query=args.name, engines=[chosenEngine])[chosenEngine],
         'engine': chosenEngine,
     }
@@ -303,15 +320,23 @@ def updateListSynchronous():
     tmpLastSession = deepcopy(lastSession)
     try:
         for i,key in enumerate(tmpLastSession):
-            episodesNumbers = animeInfo('episodesNum', query=key, engines=[availableNumEngines, 'anilist'])
-            numChosenEngine = episodesNumbers[availableNumEngines]
+            episodesNumbers = animeInfo('episodesNum', query=key, engines=[*availableNumEngines, 'anilist'])
+            currentcategory = categories[tmpLastSession[key]['engine']]
+
+            validEngine = ''
+            for engine, num in episodesNumbers.items():
+                if num>0 and engine != 'anilist' and categories[engine] == categories[tmpLastSession[key]['engine']]:
+                    validEngine = engine
+                    break
+            
+            numChosenEngine = episodesNumbers[validEngine or availableNumEngines[0]]
             numAnilist = episodesNumbers['anilist']
 
-            tmpLastSession[key]['numberOfEpisodes'] =  numAnilist
+            tmpLastSession[key]['numberOfEpisodes'] =  numAnilist if currentcategory == 'anime' else numChosenEngine 
             tmpLastSession[key]['numberOfEpisodesComputed'] =  numChosenEngine
 
             if args.update == False and key == args.name:
-                newSessionItem['numberOfEpisodes'] =  numAnilist
+                newSessionItem['numberOfEpisodes'] =  numAnilist if currentcategory == 'anime' else numChosenEngine
                 newSessionItem['numberOfEpisodesComputed'] =  numChosenEngine
             # simple progress bar
 
@@ -343,15 +368,23 @@ def updateList():
     try:
         def updateWorker(key):
             global finishedWorkers
-            episodesNumbers = animeInfo('episodesNum', query=key, engines=[availableNumEngines, 'anilist'])
-            numChosenEngine = episodesNumbers[availableNumEngines]
+            episodesNumbers = animeInfo('episodesNum', query=key, engines=[*availableNumEngines, 'anilist'])
+            currentcategory = categories[tmpLastSession[key]['engine']]
+
+            validEngine = ''
+            for engine, num in episodesNumbers.items():
+                if num>0 and engine != 'anilist' and categories[engine] == categories[tmpLastSession[key]['engine']]:
+                    validEngine = engine
+                    break
+            
+            numChosenEngine = episodesNumbers[validEngine or availableNumEngines[0]]
             numAnilist = episodesNumbers['anilist']
 
-            tmpLastSession[key]['numberOfEpisodes'] =  numAnilist
+            tmpLastSession[key]['numberOfEpisodes'] =  numAnilist if currentcategory == 'anime' else numChosenEngine 
             tmpLastSession[key]['numberOfEpisodesComputed'] =  numChosenEngine
 
             if args.update == False and key == args.name:
-                newSessionItem['numberOfEpisodes'] =  numAnilist
+                newSessionItem['numberOfEpisodes'] =  numAnilist if currentcategory == 'anime' else numChosenEngine
                 newSessionItem['numberOfEpisodesComputed'] =  numChosenEngine
             # simple progress bar
             finishedWorkers+=1

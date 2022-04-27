@@ -3,16 +3,19 @@ from scrappers.goyabu import goyabuInfo
 from scrappers.aniList import anilistInfo
 from scrappers.vizer import vizerInfo
 from scrappers.animDl import animdlInfo
+from scrappers.animesonline import animesonlineInfo
 #  from rich import print
 
 infoAlias: Dict[str, Callable] = {
     'goyabu': goyabuInfo,
+    'animesonline': animesonlineInfo,
     'anilist': anilistInfo,
     'vizer': vizerInfo,
     'animdl': animdlInfo,
 }
 
 capabilities = {name:info('capabilities') for name, info in infoAlias.items()}
+categories = {name:info('category') for name, info in infoAlias.items()}
 
 searchEngines = [key for key, value in capabilities.items() if 'search' in value]
 

@@ -1,5 +1,6 @@
 from functools import wraps
 from multiprocessing import Process
+from os import get_terminal_size, path
 
 #  def parametrized(dec):
     #  def layer(*args, **kwargs):
@@ -22,8 +23,20 @@ from multiprocessing import Process
         #  return result if len(result)>1 else list(result.items())[0][1]
     #  return aux
 
+def dir_path(string):
+    if string == '': return ''
+    new_string = path.expanduser(string)
+    if path.isdir(new_string):
+        return new_string
+    else:
+        raise NotADirectoryError(string)
 
-
+def nameTrunc(text, length):
+    columns = get_terminal_size().columns
+    if columns < length:
+        nameSlice = slice(None, len(text)-(length-columns))
+        return text[nameSlice]+'...'
+    return text
 
 def infoDecorator(outputs):
     def real_decorator(function):
@@ -120,6 +133,14 @@ translation = {
     'mpvNotFound': {
         'en': 'MPV is not installed, please specify an alternative player or serve the file over network using the "--player none" argument',
         'pt': 'O MPV não está instalado, especifique um player alternativo ou transmita o arquivo pela rede local usando o argumento "--player none" '
+    },
+    'complete': {
+        'en': 'Complete',
+        'pt': 'Completo'
+    },
+    'daysAgo': {
+        'en': 'days ago',
+        'pt': 'dias atrás'
     },
 }
 
