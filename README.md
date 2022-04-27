@@ -66,8 +66,9 @@ To run the program, type `python anime.py` in the program folder or add to your 
 
 ## Available sources 
 
-| Source                         | Description                                                        | Language   |
-| ------------------------------ | ------------------------------------------------------------------ | ---------- |
-| [goyabu](https://goyabu.com/)                         | website used to watch anime                                        | Portuguese |
-| [vizer](https://vizer.tv/)                          | website used to watch movies, tv shows and animes                  | Portuguese |
-| [animdl](https://github.com/justfoolingaround/animdl)                         | a project that extract anime episodes from various different sites | English    |
+| Source                                                | Description                                                        | Language   | Comments           |
+| ----------------------------------------------------- | ------------------------------------------------------------------ | ---------- | ------------------ |
+| [goyabu](https://goyabu.com/)                         | website used to watch anime                                        | Portuguese | Only working in SD |
+| [animesonline](https://animesonline.org/)             | website used to watch anime                                        | Portuguese |                    |
+| [vizer](https://vizer.tv/)                            | website used to watch movies, tv shows and animes                  | Portuguese |                    |
+| [animdl](https://github.com/justfoolingaround/animdl) | a project that extract anime episodes from various different sites | English    |                    |
