@@ -31,29 +31,34 @@ def c(color, text):
 def readchr(readNum=1):
     global filedescriptors
     if isWindows:
-        character = ''
+        character = []
         for _ in range(readNum):
-            character += getch()
+            character.append(getch())
         remapList = { 
-            b'\xe0': '[',
-            b'H': 'A',
-            b'P': 'B',
-            b'\x08': '\b',
+            b'\xe0': b'[',
+            b'H': b'A',
+            b'P': b'B',
+            b'\x08': b'\b',
+            b'\r': b'\n',
         }
         
         # for accented characters
         if character == b'\xc3':
-            character += getch()
+            character.append(getch())
 
-        if character in remapList:
-            for i in range(character):
+        for i in range(len(character)):
+            if character[i] in remapList:
                 character[i] = remapList[character[i]]
+        # print(character)
 
         if type(character) == str:
             return character
         else:
-            # return character
-            return character.decode()
+            newCharacter = ''
+            for ch in character:
+                newCharacter += ch.decode()
+            return newCharacter
+            # return character.decode()
 
     if filedescriptors == None:
         filedescriptors = termios.tcgetattr(sys.stdin)
@@ -63,9 +68,9 @@ def readchr(readNum=1):
 
 
 def endRawmode():
-    global filedescriptors
     if isWindows:
         return
+    global filedescriptors
 
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, filedescriptors)
     filedescriptors=None
@@ -194,8 +199,9 @@ def multiselectionTable(key: str, table:HighlightedTable, highlightList: list, h
     return newHighlighList, highlightPos, appendText if ignoredKeys else '', ignoredKeys
 
 def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, clipPos=True, behaviour="single", hintText='Digite: ', maxListSize=5,  staticHighlights=[], highlightRange=(1,1)):
-    # filedescriptors = termios.tcgetattr(sys.stdin)
-    # tty.setcbreak(sys.stdin)
+    if len(items) == 0:
+        return (None,None,'')
+
 
     highlightPos = 0
     ignoredKeys = []
@@ -244,7 +250,7 @@ def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, 
             if key == 'j':
                 highlightPos=highlightPos+1 if highlightPos<len(items)-1 or clipPos==False else highlightPos
 
-            if key == 'k':
+            if key == 'k' or key == '\t':
                 highlightPos=highlightPos-1 if highlightPos>0 or clipPos==False else highlightPos
 
             if key == '[':
@@ -284,45 +290,60 @@ def interactiveTable(items:list, header:list, alignment="rc", keyCallback=None, 
 
 if __name__ == "__main__":
     tablelist = [
-        ['episodio 1', 'um'  ],
-        ['episodio 2', 'dois'  ],
-        ['episodio 3', 'tres'  ],
-        ['episodio 4', 'quatro'  ],
-        ['episodio 4', 'quatro'  ],
-        ['episodio 5', 'cinco'  ],
-        ['episodio 6', 'seis'   ],
-        ['episodio 7', 'sete'   ],
-        ['episodio 8', 'oito'],
-        ['episodio 5', 'cinco'  ],
-        ['episodio 6', 'seis'   ],
-        ['episodio 7', 'sete'   ],
-        ['episodio 8', 'oito'],
+        ['episodio 1', 'episodio 1', 'um'     ],
+        ['episodio 2', 'episodio 2', 'dois'   ],
+        ['episodio 3', 'episodio 3', 'tres'   ],
+        ['episodio 4', 'episodio 4', 'quatro' ],
+        ['episodio 4', 'episodio 4', 'quatro' ],
+        ['episodio 5', 'episodio 5', 'cinco'  ],
+        ['episodio 6', 'episodio 6', 'seis'   ],
+        ['episodio 7', 'episodio 7', 'sete'   ],
+        ['episodio 8', 'episodio 8', 'oito'   ],
+        ['episodio 5', 'episodio 5', 'cinco'  ],
+        ['episodio 6', 'episodio 6', 'seis'   ],
+        ['episodio 7', 'episodio 7', 'sete'   ],
+        ['episodio 8', 'episodio 8', 'oito'   ],
     ]
 
     print("before")
     results = [[],None,None]
     staticHighlights=[[3, 'green']]
 
-    while results[0] != None:
-        results = interactiveTable(tablelist, ["Episódios", "Nome"], "rc", behaviour='single',maxListSize=7, staticHighlights=staticHighlights, highlightRange=(1,2))
+    # while True:
+    #     key = readchr(1)
+    #     print(key)
+    #     if key == 'q':
+    #         break
 
-        posToRemove = [item[0] for item in results[1][1:]]
-        tablelist = [item for i, item in enumerate(tablelist) if i not in posToRemove]
-        staticHighlights = [item for item in staticHighlights if item[0] not in posToRemove]
-
+    # while results[0] != None:
+    results = interactiveTable(
+        tablelist,
+        ['' ,"Episódios", "Nome"],
+        "rcc",
+        behaviour='multiSelectWithText',
+        maxListSize=7,
+        staticHighlights=staticHighlights,
+        highlightRange=(2,2)
+    )
     print(results)
 
+    # posToRemove = [item[0] for item in results[1][1:]]
+    # tablelist = [item for i, item in enumerate(tablelist) if i not in posToRemove]
+    # staticHighlights = [item for item in staticHighlights if item[0] not in posToRemove]
+    #
+    # print(results)
 
-    #  if results[-1][len('Digite: '):] != 'delete':
-        #  posToRemove = [item[0] for item in results[1][1:]]
-        #  newTablelist = [item for i, item in enumerate(tablelist) if i not in posToRemove]
 
-
-        #  results = interactiveTable(newTablelist, ["Episódios", "Nome"], "rc",  behaviour='multiSelect')
-        #  posToRemove = [item[0] for item in results[1][1:]]
-        #  newTablelist = [item for i, item in enumerate(newTablelist) if i not in posToRemove]
-        #  results = interactiveTable(newTablelist, ["Episódios", "Nome"], "rc",  behaviour='single')
-        #  print(newTablelist)
+    # if results[-1][len('Digite: '):] != 'delete':
+    #     posToRemove = [item[0] for item in results[1][1:]]
+    #     newTablelist = [item for i, item in enumerate(tablelist) if i not in posToRemove]
+    #
+    #
+    #     results = interactiveTable(newTablelist, ["Episódios", "Nome"], "rc",  behaviour='multiSelect')
+    #     posToRemove = [item[0] for item in results[1][1:]]
+    #     newTablelist = [item for i, item in enumerate(newTablelist) if i not in posToRemove]
+    #     results = interactiveTable(newTablelist, ["Episódios", "Nome"], "rc",  behaviour='single')
+    #     print(newTablelist)
 
     #  print("after")
 

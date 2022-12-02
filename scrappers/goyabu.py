@@ -1,13 +1,12 @@
-import os
 from typing import Dict, List, Optional, Union
 from difflib import SequenceMatcher
 from bs4 import BeautifulSoup as bs4
 import requests
 import re
-from tqdm import tqdm
+# from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from scrappers.utils import infoDecorator
-#  from utils import infoDecorator
+# from utils import infoDecorator
 
 
 hreflist = []
@@ -33,7 +32,7 @@ def goyabuSearch(name:str) -> List[str]:
     global hreflist
     global namelist
 
-    animeList = soup.find(class_='episode-container')
+    animeList = soup.find(class_='episodes-container')
     results = zip([link['href'] for link in animeList.find_all('a')], [name.text for name in animeList.find_all('h3')])
     results = sorted(results, key=lambda x: SequenceMatcher(None, name, x[1]).ratio(), reverse=True)
 
@@ -147,11 +146,13 @@ def goyabuEpisodes(name:str, slicelist=None) -> Dict[str, str]:
 
         videolist[i] = allmatches[0]
 
-    with tqdm(total=len(ep_idlist)) as pbar:
-        with ThreadPoolExecutor(max_workers=3) as executor:
-            futures = [executor.submit(getvideourl, id, i) for i,id in enumerate(ep_idlist)]
-            for _ in as_completed(futures):
-                pbar.update(1)
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = [executor.submit(getvideourl, id, i) for i,id in enumerate(ep_idlist)]
+    # with tqdm(total=len(ep_idlist)) as pbar:
+    #     with ThreadPoolExecutor(max_workers=3) as executor:
+    #         futures = [executor.submit(getvideourl, id, i) for i,id in enumerate(ep_idlist)]
+    #         for _ in as_completed(futures):
+    #             pbar.update(1)
 
     return {name:link for name,link in zip(ep_namelist, videolist)}
 
@@ -217,5 +218,25 @@ def goyabuInfo(*type:str, query:Optional[str]=None, **kwargs) -> Union[Dict[str,
 
 if __name__ == "__main__":
     #  result = goyabuInfo('episodes', query='yuukaku', range=['3'])
-    result = goyabuInfo('episodes', query='yuukaku')
-    print(result)
+    # result = goyabuInfo('episodes', query='yuukaku')
+    # print(result)
+
+    import termtables as tt
+    from dropdown import interactiveTable, bcolors, isWindows
+    tablelist = [
+        ['episodio 1','episodio 1', 'um'  ],
+        ['episodio 2','episodio 2', 'dois'  ],
+        ['episodio 3','episodio 3', 'tres'  ],
+        ['episodio 4','episodio 4', 'quatro'  ],
+        ['episodio 4','episodio 4', 'quatro'  ],
+        ['episodio 5','episodio 5', 'cinco'  ],
+        ['episodio 6','episodio 6', 'seis'   ],
+        ['episodio 7','episodio 7', 'sete'   ],
+        ['episodio 8','episodio 8', 'oito'],
+        ['episodio 5','episodio 5', 'cinco'  ],
+        ['episodio 6','episodio 6', 'seis'   ],
+        ['episodio 7','episodio 7', 'sete'   ],
+        ['episodio 8','episodio 8', 'oito'],
+    ]
+    interactiveTable(tablelist, ['' ,"Episódios", "Nome"], "rcc", behaviour='multiSelectWithText',maxListSize=7, highlightRange=(2,2))
+

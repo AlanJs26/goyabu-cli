@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup as bs4
 import requests
 import re
 from time import sleep
-from tqdm import tqdm
+# from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from json import loads as load_json
 
@@ -211,11 +211,13 @@ def vizerSeries(movie_url:str, slicelist=None) -> Dict[str, str]:
                         break
 
 
-    with tqdm(total=len(episodesBySeason)) as pbar:
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            futures = [executor.submit(getvideourl, episode, index) for index, episode in enumerate(episodesBySeason)]
-            for _ in as_completed(futures):
-                pbar.update(1)
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [executor.submit(getvideourl, episode, index) for index, episode in enumerate(episodesBySeason)]
+    # with tqdm(total=len(episodesBySeason)) as pbar:
+    #     with ThreadPoolExecutor(max_workers=4) as executor:
+    #         futures = [executor.submit(getvideourl, episode, index) for index, episode in enumerate(episodesBySeason)]
+    #         for _ in as_completed(futures):
+    #             pbar.update(1)
 
     #  print(finalUrls)
 

@@ -89,6 +89,9 @@ if __name__ == "__main__":
     #  print(searchAnime('boku'))
     #  print(infoAlias['goyabu']('episodes', query='komi'))
     print(animeInfo('episodes', query='shingeki', range=['1', '1']))
+
+
+
     #  print(list(enginesByLanguage))
     #  print(enginesByLanguage)
     #  print(searchAnime('asdffsa'))

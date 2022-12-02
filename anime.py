@@ -1,12 +1,29 @@
+# tablelist = [
+#     ['episodio 1','episodio 1', 'um'  ],
+#     ['episodio 2','episodio 2', 'dois'  ],
+#     ['episodio 3','episodio 3', 'tres'  ],
+#     ['episodio 4','episodio 4', 'quatro'  ],
+#     ['episodio 4','episodio 4', 'quatro'  ],
+#     ['episodio 5','episodio 5', 'cinco'  ],
+#     ['episodio 6','episodio 6', 'seis'   ],
+#     ['episodio 7','episodio 7', 'sete'   ],
+#     ['episodio 8','episodio 8', 'oito'],
+#     ['episodio 5','episodio 5', 'cinco'  ],
+#     ['episodio 6','episodio 6', 'seis'   ],
+#     ['episodio 7','episodio 7', 'sete'   ],
+#     ['episodio 8','episodio 8', 'oito'],
+# ]
+
+import termtables as tt
+from dropdown import interactiveTable, bcolors, isWindows
 import os, errno
 from datetime import datetime,date
 import json
-import termtables as tt
-from dropdown import interactiveTable, bcolors, isWindows
 from time import sleep
 from argparse import RawTextHelpFormatter, ArgumentParser
 from copy import deepcopy
 from rawserver import serveRawText
+# interactiveTable(tablelist, ['' ,"Episódios", "Nome"], "rcc", behaviour='multiSelectWithText',maxListSize=7, highlightRange=(2,2))
 from scrappers.utils import runInParallel, translation, nameTrunc, dir_path 
 from shutil import which
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -131,6 +148,7 @@ if len(lastSession) and args.name == '' and args.yes == False and args.update ==
     results = [[],[],None]
 
     while len(results[1]) != 1 and results[0] != None:
+
         results = interactiveTable(tableVals[::-1], ["", translation['last_sessions'][sysLang], translation['date'][sysLang]], "rcc", behaviour='multiSelectWithText', maxListSize=17, hintText=translation['hintText'][sysLang], highlightRange=(2,2))
         if results[0] == None: continue
 

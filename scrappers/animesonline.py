@@ -4,7 +4,7 @@ from difflib import SequenceMatcher
 from bs4 import BeautifulSoup as bs4
 import requests
 import re
-from tqdm import tqdm
+# from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from scrappers.utils import infoDecorator
 #  from utils import infoDecorator
@@ -104,15 +104,17 @@ def animesonlineEpisodes(name:str, slicelist=None) -> Dict[str, str]:
 
         videolist[i] = finallink
 
-    with tqdm(total=len(ep_hreflist)) as pbar:
-        #  for i,href in enumerate(ep_hreflist):
-            #  getvideourl(href, i)
-            #  pbar.update(1)
-
-        with ThreadPoolExecutor(max_workers=3) as executor:
-            futures = [executor.submit(getvideourl, href, i) for i,href in enumerate(ep_hreflist)]
-            for _ in as_completed(futures):
-                pbar.update(1)
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = [executor.submit(getvideourl, href, i) for i,href in enumerate(ep_hreflist)]
+    # with tqdm(total=len(ep_hreflist)) as pbar:
+    #     #  for i,href in enumerate(ep_hreflist):
+    #         #  getvideourl(href, i)
+    #         #  pbar.update(1)
+    #
+    #     with ThreadPoolExecutor(max_workers=3) as executor:
+    #         futures = [executor.submit(getvideourl, href, i) for i,href in enumerate(ep_hreflist)]
+    #         for _ in as_completed(futures):
+    #             pbar.update(1)
 
     return {name:link for name,link in zip(ep_namelist, videolist)}
 
