@@ -15,7 +15,7 @@
 # ]
 
 import termtables as tt
-from dropdown import interactiveTable, bcolors, isWindows
+from dropdown import interactiveTable, bcolors, isWindows, TableResults
 import os, errno
 from datetime import datetime,date
 import json
@@ -28,6 +28,7 @@ from scrappers.utils import runInParallel, translation, nameTrunc, dir_path
 from shutil import which
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from locale import getdefaultlocale
+from typing import Union
 
 
 sysLang = getdefaultlocale()[0]
@@ -131,37 +132,41 @@ for i,name in enumerate(lastSession):
     offset = 38
 
     if lastep == epsComputed and lastep < eps:
-        tableVals.append(
-[i+1, f'{bcolors["grey"]}{nameTrunc(name, offset+len(name)+len(watchDate))} - Episódio {lastep} [{epsComputed}/{eps}]{bcolors["end"]}', watchDate]
-        )
+        entry = f'{bcolors["grey"]}{nameTrunc(name, offset+len(name)+len(watchDate))} - Episódio {lastep} [{epsComputed}/{eps}]{bcolors["end"]}'
     elif lastep < eps:
-        tableVals.append(
-[i+1, f'{nameTrunc(name, offset+len(name)+len(watchDate))} - Episódio {lastep} [{epsComputed}/{eps}]', watchDate]
-        )
+        entry = f'{nameTrunc(name, offset+len(name)+len(watchDate))} - Episódio {lastep} [{epsComputed}/{eps}]'
     else:
-        tableVals.append(
-[i+1, f'{bcolors["green"]}{nameTrunc(name, offset-5+len(name)+len(watchDate))} - {translation["complete"][sysLang]}{bcolors["end"]}', watchDate]
-        )
+        entry = f'{bcolors["green"]}{nameTrunc(name, offset-5+len(name)+len(watchDate))} - {translation["complete"][sysLang]}{bcolors["end"]}'
+
+    tableVals.append([i+1, entry, watchDate])
 
 # Print the interactive Last Session table and remove the selected items
 if len(lastSession) and args.name == '' and args.yes == False and args.update == False:
-    results = [[],[],None]
+    results:Union[TableResults,None] = None
 
-    while len(results[1]) != 1 and results[0] != None:
+    while results is None or results['items']:
+        results = interactiveTable(
+            tableVals[::-1],
+            ["", translation['last_sessions'][sysLang], translation['date'][sysLang]],
+            "rcc",
+            behaviour='multiSelectWithText',
+            maxListSize=17,
+            hintText=translation['hintText'][sysLang],
+            highlightRange=(2,2)
+        )
+        if results['text'] or not results['items']: continue
 
-        results = interactiveTable(tableVals[::-1], ["", translation['last_sessions'][sysLang], translation['date'][sysLang]], "rcc", behaviour='multiSelectWithText', maxListSize=17, hintText=translation['hintText'][sysLang], highlightRange=(2,2))
-        if results[0] == None: continue
-
-        posToRemove = [len(tableVals)-1-item[0] for item in results[1][1:]]
+        posToRemove = results['items'].keys()
+        # posToRemove = [len(tableVals)-1-item[0] for item in results[1][1:]]
         tableVals = [item for i, item in enumerate(tableVals) if i not in posToRemove]
 
     posToMaintain = [item[0] for item in tableVals]
     lastSession = {k: lastSession[k] for i,k in enumerate(lastSession) if i+1 in posToMaintain}
 
-    if results[0] != None and len(results[1]) == 1 and results[-1] == '':
-        args.name = str(results[0][0])
+    if results['selectedItem'] and not results['text']:
+        args.name = str(results['selectedItem'][0])
     else:
-        args.name = results[-1]
+        args.name = results['text']
 
 #  If the search term is empty and exists last session items, choose the first last session
 if args.name == '':
@@ -241,12 +246,18 @@ if  args.yes == False and args.update == False:
     tableVals     = [[i+1, nameTrunc(title, 15+len(title)), ', '.join(engineNames)] for i, (title, engineNames) in enumerate(mergednamelist)]
 
     result = interactiveTable(tableVals, ["", "Anime", "engine"], "rll", maxListSize=17, highlightRange=(2,2))
-    args.name = tableValsOrig[result[0][0]-1][1]
-    chosenEngine = result[0][-1]
+    if result['selectedItem']:
+        args.name = tableValsOrig[result['selectedItem'][0]-1][1]
+        chosenEngine = result['selectedItem'][-1]
+    else:
+        raise Exception('Invalid Item')
 
     if len(chosenEngine.split(', '))>1:
         result = interactiveTable([[engine] for engine in chosenEngine.split(', ')], ["engine"], "l", maxListSize=17, highlightRange=(0,1))
-        chosenEngine = result[0][-1]
+        if result['selectedItem']:
+            chosenEngine = result['selectedItem'][0]
+        else:
+            raise Exception('Invalid Engine')
 
 
 if args.update == False:
