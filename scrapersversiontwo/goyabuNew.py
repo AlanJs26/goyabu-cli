@@ -1,17 +1,28 @@
 from typing import List
-from scraper import Scraper,Anime,Episode,VideoUrl,bindScrapers
+from scraper import Scraper,Anime,Episode,VideoUrl
 import requests
 from bs4 import BeautifulSoup as bs4
 from lxml import etree
-
-from scraper import TScraper
+from scrappers.utils import animeTitle2Id
+import re
 
 class Goyabu(Scraper):
     def __init__(self):
         super().__init__('goyabu', ['pt'])
         self.scrapers
 
-    @bindScrapers
+    def parseLink(self, url:str) -> str:
+        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+
+        html=requests.get(url, headers=headers).text 
+
+        allmatches = re.findall(r"(?<=src=').+kanra\.dev.+?(?=')", html)
+        allmatches = list(filter(bool, allmatches))
+        if not allmatches:
+            return ''
+
+        return allmatches[0]
+
     def search(self, query:str) -> List[Anime]:
         html = requests.get(f'https://goyabu.com/?s={query.replace(" ","+")}').text
         soup = bs4(html, 'html.parser')
@@ -23,14 +34,13 @@ class Goyabu(Scraper):
         for item in a_link:
             animes.append(
                 Anime(item.getnext().text,
-                      item.getnext().text,
+                      animeTitle2Id(item.getnext().text),
                       source=self.name,
                       pageUrl=item.get('href')
                       )
             )
         return animes
 
-    @bindScrapers
     def episodes(self, animePageUrl) -> List[Episode]:
         html = requests.get(animePageUrl).text
         soup = bs4(html, 'html.parser')
@@ -39,9 +49,9 @@ class Goyabu(Scraper):
         epnames = dom.xpath('//*[@id="main"]/div[1]/div/div[2]/div/div/a/div[2]')
 
         episodes = []
-        index = 0
+        index = len(epnames)+1
         for item in epnames:
-            index+=1
+            index-=1
             ep = Episode(item.text, str(index))
 
             url = VideoUrl(item.getparent().get('href'),'sd','pt',self.name)

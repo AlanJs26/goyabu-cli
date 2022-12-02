@@ -2,7 +2,11 @@ import sys, os
 import re
 import termtables as tt
 from math import floor
+from functools import reduce
 from typing import TypedDict,List,Callable,Optional,cast,Union,Dict
+from scrappers.utils import nameTrunc
+
+from copy import deepcopy
 
 isWindows = sys.platform == 'win32'
 
@@ -82,9 +86,16 @@ class THighlight(TypedDict):
 
 
 class HighlightedTable:
-    def __init__(self, items:list, header:list, highlights:List[THighlight], alignment="rc", highlightRange=(1,1), maxListSize=5):
+    def __init__(self, items:list, header:list, highlights:List[THighlight], alignment="rc", highlightRange=(1,1), maxListSize=5, flexColumn=0, width=0):
+        newItems = deepcopy(items)
+        if width>0:
+            if flexColumn < 0 or flexColumn >= len(header):
+                raise Exception('Invalid flexColumn: must be a valid column index')
+            for item in newItems:
+                linelength = reduce(lambda p,n:len(n)+p, item, 0)
+                item[flexColumn] = nameTrunc(item[flexColumn], linelength+18)
         table = tt.to_string(
-            items,
+            newItems,
             header=header,
             style=tt.styles.rounded,
             alignment=alignment,
@@ -230,8 +241,11 @@ class TableResults(TypedDict):
 def interactiveTable(
     items:List[list], header:list, alignment="rc", keyCallback:Optional[TKeyCallback]=None,
         clipPos=True, behaviour="single", hintText='Digite: ',
-        maxListSize=5, staticHighlights:List[THighlight]=[], highlightRange=(1,1)) -> TableResults:
+        maxListSize=5, staticHighlights:List[THighlight]=[], highlightRange=(1,1),
+        width=0, flexColumn=0) -> TableResults:
 
+    if len(header) <= 1:
+        raise Exception('the number of columns must be greater than 1')
     if not items:
         return {
             'selectedPos': None,
@@ -260,7 +274,7 @@ def interactiveTable(
 
     highlights : List[THighlight] = [selectedStyle(highlightPos)]
 
-    table = HighlightedTable(items, header, highlights, alignment, highlightRange=highlightRange, maxListSize=maxListSize)
+    table = HighlightedTable(items, header, highlights, alignment, highlightRange=highlightRange, maxListSize=maxListSize, width=width,flexColumn=flexColumn)
     table.update([*staticHighlights,*highlights], scrollAmount=highlightPos)
     #  table.cursorToEnd(-1 if 'WithText' in behaviour else 0)
     table.cursorToEnd(0)

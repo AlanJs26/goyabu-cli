@@ -1,4 +1,4 @@
-from typing import List,Tuple,Set
+from typing import List,Tuple,Set,Dict
 
 class VideoUrl():
     def __init__(self, url, quality, lang, source, scrapers:List['Scraper']=[]):
@@ -22,6 +22,15 @@ class VideoUrl():
 
     def test(self) -> bool:
         return True
+
+def bindScrapers(f):
+    def wrapper(self, *args, **kwargs):
+        result = f(self,*args,**kwargs)
+        for item in result:
+            item.scrapers = self.scrapers
+        return result
+    return wrapper
+
 
 class Episode():
     def __init__(self, title:str, id:str, scrapers:List['Scraper']=[]):
@@ -56,12 +65,15 @@ class Episode():
         return list(langs)
 
 
-    def addSource(self, sourceName:str, urls:List[VideoUrl]):
+    @bindScrapers
+    def addSource(self, sourceName:str, urls:List[VideoUrl]) -> List[VideoUrl]:
         working_urls = list(filter(lambda x : x.test(), urls))
 
+        # print(self.scrapers)
         if all(sourceName != source for source,_ in self.sources):
             self.sources.append((sourceName, working_urls))
-            return
+            # print(working_urls[0].scrapers)
+            return working_urls
 
         for item in self.sources:
             if item[0] == sourceName:
@@ -72,6 +84,8 @@ class Episode():
 
                 item[1].extend(filtered_urls)
 
+        return next(videourls for source,videourls in self.sources if source == sourceName)
+
     def merge(self, episode:'Episode', unsafe=False):
         if not unsafe and episode.id != self.id:
             return
@@ -79,28 +93,36 @@ class Episode():
         for source in episode.sources:
             self.addSource(source[0], source[1])
 
-
 class Anime():
     def __init__(self, title:str, id:str, source='', pageUrl='', scrapers:List['Scraper']=[]):
         self.scrapers=scrapers
         self.id = id
         self.title = title
-        self.episodes = {
-            'id1' : Episode('title', 'id1')
+        self.episodes:Dict[str,Episode] = {
+            # 'id1' : Episode('title', 'id1')
         }
         self.source = source
         self.pageUrl = pageUrl
 
-    def retrieveEpisodes(self):
+    def retrieveEpisodes(self) -> List[Episode]:
         right_scraper = next((scraper for scraper in self.scrapers if scraper.name == self.source), None)
 
         if right_scraper == None:
             raise LookupError(f"Cannot find matching scraper for '{self.source}'")
 
         for episode in right_scraper.episodes(self.pageUrl):
-            self.episodes[episode.id] = episode
+            self._addEpisode(episode)
+            # self.episodes[episode.id] = episode
+
+        return list(self.episodes.values())
 
     def _addEpisode(self, episode:Episode):
+        # bind scrapers to nested videourls
+        episode.scrapers = self.scrapers
+        for source in episode.sources:
+            for videourl in source[1]:
+                videourl.scrapers = self.scrapers
+
         if episode.id in self.episodes:
             self.episodes[episode.id].merge(episode)
         else:
@@ -111,14 +133,6 @@ class Anime():
         for episode in new_anime.episodes.values():
             self._addEpisode(episode)
 
-def bindScrapers(f):
-    def wrapper(self, *args, **kwargs):
-        result = f(self,*args,**kwargs)
-        for item in result:
-            item.scrapers = self.scrapers
-        return result
-    return wrapper
-
 class Scraper():
     def __init__(self, name:str, lang:List[str], scrapers:List['Scraper']=[]):
         self.scrapers:List['Scraper']=scrapers
@@ -126,14 +140,15 @@ class Scraper():
         self.lang = lang
 
     def parseLink(self, url:str) -> str:
-        raise NotImplementedError(f"parseLink not implemented for {self.name}")
+        raise NotImplementedError(f"parseLink not implemented for '{self.name}'")
 
     def search(self, query:str) -> List[Anime]:
-        return [Anime('anime_title', 'anime1')]
+        raise NotImplementedError(f"search not implemented for '{self.name}'")
+        # return [Anime('anime_title', 'anime1')]
 
-    @bindScrapers
     def episodes(self, animePageUrl) -> List[Episode]:
-        return [Episode('title','ep1')]
+        raise NotImplementedError(f"episodes not implemented for '{self.name}'")
+        # return [Episode('title','ep1')]
 
 
 

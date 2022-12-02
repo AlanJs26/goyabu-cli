@@ -23,6 +23,12 @@ from os import get_terminal_size, path
         #  return result if len(result)>1 else list(result.items())[0][1]
     #  return aux
 
+def getTotalEpisodesCount(title:str):
+    return 12
+
+def animeTitle2Id(title:str):
+    return title
+
 def dir_path(string):
     if string == '': return ''
     new_string = path.expanduser(string)
