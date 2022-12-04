@@ -101,6 +101,8 @@ class Anime():
         self.episodes:Dict[str,Episode] = {
             # 'id1' : Episode('title', 'id1')
         }
+        self.availableScrapers = [source]
+
         self.source = source
         self.pageUrl = pageUrl
 
@@ -130,6 +132,8 @@ class Anime():
         pass
 
     def merge(self, new_anime:'Anime'):
+        self.availableScrapers = list(set([*self.availableScrapers,*new_anime.availableScrapers]))
+
         for episode in new_anime.episodes.values():
             self._addEpisode(episode)
 

@@ -1,11 +1,11 @@
-from scraper import Anime,Episode
+from scraper import Anime,Scraper
 from typing import List,Union
 from datetime import timezone
 from datetime import datetime
 from os import path
 import json
 from scrappers.utils import getTotalEpisodesCount
-from dropdown import interactiveTable
+from dropdown import interactiveTable,bcolors
 
 class SessionItem():
     def __init__(self, anime:Anime, date_utc:int, episodesInTotal:int, availableEpisodes:int, lastEpisode:int, lastSource:str):
@@ -36,8 +36,9 @@ class SessionItem():
 
 
 class SessionManager():
-    def __init__(self, root=''):
+    def __init__(self, root='', scrapers:List[Scraper]=[]):
         self.filename = '.lastsession.json'
+        self.scrapers = scrapers
 
         if root != '':
             self.root = root
@@ -48,20 +49,14 @@ class SessionManager():
             with open(path.join(root,self.filename), 'w') as file:
                 json.dump({}, file)
 
-        self.all_ids:List[str] = []
-
         self.session_items = []
         self.session_items = self.load()
 
-
-    def _updateLookupKeys(self, session_items=None):
-        self.all_ids = [item.id for item in (session_items if session_items else self.session_items)]
-
-
     def add(self, animes:List[Anime]):
+        all_ids = [item.id for item in self.session_items]
         for anime in animes:
-            if anime.id in self.all_ids: 
-                right_sessionItem = self.session_items[self.all_ids.index(anime.id)]
+            if anime.id in all_ids: 
+                right_sessionItem = self.session_items[all_ids.index(anime.id)]
                 right_sessionItem.lastSource = anime.source
                 right_sessionItem.availableEpisodes = len(anime.episodes)
                 right_sessionItem.anime = anime
@@ -76,7 +71,6 @@ class SessionManager():
                         anime.source
                     )
                 )
-        self._updateLookupKeys()
 
     def update(self, anime:Anime, lastEpisode:int, watchTime=0):
         right_sessionItem = next(item for item in self.session_items if item.id == anime.id)
@@ -90,7 +84,6 @@ class SessionManager():
     def remove(self, id:str):
         right_sessionItem = next(item for item in self.session_items if item.id == id)
         self.session_items.remove(right_sessionItem)
-        self._updateLookupKeys()
 
     def load(self) -> List[SessionItem]:
         with open(path.join(self.root,self.filename)) as file:
@@ -100,6 +93,7 @@ class SessionManager():
 
         for id,json_anime in content.items():
             anime = Anime(json_anime['title'], id, source=json_anime['lastSource'], pageUrl=json_anime['pageUrl'])
+            anime.scrapers = self.scrapers
 
             session_items.append(SessionItem(
                 anime,
@@ -110,7 +104,6 @@ class SessionManager():
                 json_anime['lastSource'],
             ))
         
-        self._updateLookupKeys(session_items)
         return session_items
 
     def dump(self):
@@ -133,18 +126,37 @@ class SessionManager():
 
     def select(self, hintText='Digite: ', maxListSize=5, width=0, flexColumn=0) -> Union[SessionItem,str]:
 
-        session_item_names = [['',item.title] for item in self.session_items]
+        def format_status(session_item:SessionItem) -> str:
+            status = f"Episodio {session_item.lastEpisode} [{session_item.availableEpisodes}/{session_item.episodesInTotal}]"
+
+            if session_item.status == 'complete':
+                status = bcolors['green']+"Completo"+bcolors['end']
+            elif session_item.status == 'insync':
+                status = bcolors['grey']+status+bcolors['end']
+
+            return status
+
+        if not self.session_items:
+            return str(input(hintText))
+
+        table_rows = [[str(index+1),item.title, format_status(item)] for index,item in enumerate(self.session_items)]
+
 
         results = interactiveTable(
-            session_item_names[::-1],
-            ['' ,"Sessoes anteriores"],
-            "cl",
+            table_rows[::-1],
+            ['' ,"Sessoes anteriores", "Status"],
+            "ccc",
             behaviour='multiSelectWithText',
-            maxListSize=7,
-            highlightRange=(1,1)
+            maxListSize=maxListSize,
+            width=width,
+            flexColumn=flexColumn,
+            highlightRange=(2,2),
+            hintText=hintText
         )
 
         if results['text']:
+            if results['text'].isdigit():
+                return self.session_items[int(results['text'])-1]
             return results['text']
 
         if results['selectedPos'] is None:
