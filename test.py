@@ -2,6 +2,7 @@ from manager import Manager
 import termtables as tt
 from dropdown import interactiveTable, HighlightedTable
 from sessionManager import SessionManager
+from playerManager import PlayerManager
 
 manager = Manager()
 sessionmanager = SessionManager(scrapers=manager.scrapers)
@@ -96,16 +97,26 @@ if choice not in ['', 'S', 's']:
 
     episodes = [episodes[i] for i in results['items']]
 
-links = []
 for episode in episodes:
-    links.append([*episode.getLinks(anime.source)])
+    episode.retrieveLinks(anime.source)
 
-print(links)
+    for link in episode.getLinksBySource(anime.source):
+        print(link.url)
 
-#
+player = PlayerManager(anime.title, anime.source, episodes)
+
+playlist_file = player.generatePlaylistFile()
+
+if player.isMpvAvailable():
+    results = player.playWithMPV(playlist_file)
+else:
+    results = player.play(playlist_file, 'mpv')
+
+print(results)
+
 # sessionmanager.add([anime])
 #
-# sessionmanager.update(anime, int(results['selectedItem'][0]), 300)
+# sessionmanager.update(anime, results['lastEpisode'], results['watchTime'])
 #
 # sessionmanager.dump()
 

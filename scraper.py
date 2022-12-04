@@ -15,9 +15,10 @@ class VideoUrl():
         if right_scraper == None:
             raise LookupError(f"Cannot find matching scraper for '{self.source}'")
 
+        self.url = right_scraper.parseLink(self.url)
 
         self.ready = True
-        return right_scraper.parseLink(self.url)
+        return self.url
 
 
     def test(self) -> bool:
@@ -36,14 +37,23 @@ class Episode():
     def __init__(self, title:str, id:str, scrapers:List['Scraper']=[]):
         self.scrapers = scrapers
         self.id = id
+        self.index = 0
         self.title = title
         self.sources : List[Tuple[str,List[VideoUrl]]] = [] # (source_name, [video_url,...])
         self.description = ''
 
-    def getSources(self) -> List[Tuple[str,List[VideoUrl]]]:
-        return [('source1', [VideoUrl('link1', 'sd', 'portuguese', 'source1')])]
+    def getLinksBySource(self, sourceName:str) -> List[VideoUrl]:
+        videoUrls = next((source[1] for source in self.sources if source[0] == sourceName),None)
 
-    def getLinks(self, sourceName:str):
+        if not self.scrapers:
+            raise LookupError(f"Cannot access scrapers in episode {self.title}")
+
+        if videoUrls == None:
+            raise LookupError(f"Cannot find matching source for '{sourceName}' in episode {self.title}")
+
+        return videoUrls
+
+    def retrieveLinks(self, sourceName:str):
         right_source = next((source[1] for source in self.sources if source[0] == sourceName),None)
 
         if not self.scrapers:
@@ -53,7 +63,7 @@ class Episode():
             raise LookupError(f"Cannot find matching source for '{sourceName}' in episode {self.title}")
 
         for source in right_source:
-            yield source.getLink()
+            source.getLink()
 
     def availableLanguages(self) -> List[str]:
         langs : Set[str] = set()
@@ -112,7 +122,8 @@ class Anime():
         if right_scraper == None:
             raise LookupError(f"Cannot find matching scraper for '{self.source}'")
 
-        for episode in right_scraper.episodes(self.pageUrl):
+        for index,episode in enumerate(right_scraper.episodes(self.pageUrl)):
+            episode.index = index
             self._addEpisode(episode)
             # self.episodes[episode.id] = episode
 
