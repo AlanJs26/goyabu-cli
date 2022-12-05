@@ -4,7 +4,7 @@ from datetime import timezone
 from datetime import datetime
 from os import path
 import json
-from scrappers.utils import getTotalEpisodesCount
+from utils import getTotalEpisodesCount
 from dropdown import interactiveTable,bcolors
 
 class SessionItem():
@@ -26,6 +26,7 @@ class SessionItem():
     def title(self):
         return self.anime.title
 
+    @property
     def status(self):
         if self.lastEpisode == self.availableEpisodes and self.lastEpisode < self.episodesInTotal:
             return 'insync'
@@ -65,7 +66,7 @@ class SessionManager():
                     SessionItem(
                         anime,
                         int(datetime.now().timestamp()),
-                        getTotalEpisodesCount(anime.id),
+                        0,
                         len(anime.episodes),
                         0,
                         anime.source
@@ -92,7 +93,8 @@ class SessionManager():
         session_items = []
 
         for id,json_anime in content.items():
-            anime = Anime(json_anime['title'], id, source=json_anime['lastSource'], pageUrl=json_anime['pageUrl'])
+            anime = Anime(json_anime['title'], id, source=json_anime['lastSource'])
+            anime.pageUrl = json_anime['pageUrl']
             anime.scrapers = self.scrapers
 
             session_items.append(SessionItem(
@@ -114,7 +116,7 @@ class SessionManager():
                 'title': session_item.title,
                 'pageUrl': session_item.anime.pageUrl,
                 'utc': int(session_item.date_utc.timestamp()),
-                'episodesInTotal': session_item.episodesInTotal,
+                'episodesInTotal': getTotalEpisodesCount(session_item.title),
                 'availableEpisodes': session_item.availableEpisodes,
                 'lastEpisode': session_item.lastEpisode,
                 'lastSource': session_item.lastSource,
@@ -139,11 +141,11 @@ class SessionManager():
         if not self.session_items:
             return str(input(hintText))
 
-        table_rows = [[str(index+1),item.title, format_status(item)] for index,item in enumerate(self.session_items)]
+        table_rows = [[str(len(self.session_items)-index),item.title, format_status(item)] for index,item in enumerate(self.session_items)]
 
 
         results = interactiveTable(
-            table_rows[::-1],
+            table_rows,
             ['' ,"Sessoes anteriores", "Status"],
             "ccc",
             behaviour='multiSelectWithText',
@@ -156,13 +158,13 @@ class SessionManager():
 
         if results['text']:
             if results['text'].isdigit():
-                return self.session_items[int(results['text'])-1]
+                return self.session_items[len(self.session_items)-int(results['text'])]
             return results['text']
 
         if results['selectedPos'] is None:
             raise Exception('Invalid position')
 
-        return self.session_items[len(self.session_items)-results['selectedPos']-1]
+        return self.session_items[results['selectedPos']]
 
 
 

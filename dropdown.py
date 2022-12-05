@@ -4,7 +4,7 @@ import termtables as tt
 from math import floor
 from functools import reduce
 from typing import TypedDict,List,Callable,Optional,cast,Union,Dict
-from scrappers.utils import nameTrunc
+from utils import nameTrunc
 
 from copy import deepcopy
 
@@ -143,10 +143,10 @@ class HighlightedTable:
                 #  line = re.sub(r"(│.+?│\s+)(.+?)(\s+│.+?│)", r"\1{}\2{}\3".format(highlightColor, bcolors['end']), line)
                 f1 = self.highlightRange[0]
                 f2 = self.highlightRange[1]
-                if bcolors['end'] in line:
-                    line = re.sub(r"((.*?│.*?){"+str(f1)+r"})(..\b.+\b\S?)((.*?│.*?){"+str(f2)+r"})", r"\1{}\3\4".format(highlightColor), line)
-                else:
-                    line = re.sub(r"((.*?│.*?){"+str(f1)+r"})(\b.+\b\S?)((.*?│.*?){"+str(f2)+r"})", r"\1{}\3{}\4".format(highlightColor, bcolors['end']), line)
+                # if bcolors['end'] in line:
+                #     line = re.sub(r"((.*?│.*?){"+str(f1)+r"})(..\b.+\b\S?)((.*?│.*?){"+str(f2)+r"})", r"\1{}\3\4".format(highlightColor), line)
+                # else:
+                line = re.sub(r"((.*?│.*?){"+str(f1)+r"})(\b.+\b\S?)((.*?│.*?){"+str(f2)+r"})", r"\1{}\3{}\4".format(highlightColor, bcolors['end']), line)
             print(line)
 
         if scrollAmount+self.maxListSize < len(self.tableLines):

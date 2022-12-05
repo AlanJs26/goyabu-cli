@@ -2,6 +2,8 @@ from functools import wraps
 from multiprocessing import Process
 from os import get_terminal_size, path
 
+from anilist import Client
+
 #  def parametrized(dec):
     #  def layer(*args, **kwargs):
         #  def repl(f):
@@ -23,11 +25,37 @@ from os import get_terminal_size, path
         #  return result if len(result)>1 else list(result.items())[0][1]
     #  return aux
 
+anilistClient = Client()
+search_buffer = {}
+
 def getTotalEpisodesCount(title:str):
-    return 12
+    try:
+        result = anilistClient.search_anime(title,1)
+
+        if not result:
+            return 0
+        
+        searchResult = result[0]
+        foundAnime = anilistClient.get_anime(searchResult.id)
+
+        return foundAnime.episodes
+    except:
+        return 0
 
 def animeTitle2Id(title:str):
     return title
+    # try:
+    #     result = anilistClient.search_anime(title,1)
+    #
+    #     if not result:
+    #         return 0
+    #     
+    #     searchResult = result[0]
+    #     foundAnime = anilistClient.get_anime(searchResult.id)
+    #
+    #     return foundAnime.title.romaji
+    # except:
+    #     return title
 
 def dir_path(string):
     if string == '': return ''

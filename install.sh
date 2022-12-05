@@ -23,8 +23,8 @@ python3 -m pip install -r $tmp/requirements.txt
 
 mkdir -p $install_path
 yes | cp $tmp/{animeScrapper,dropdown,anime,rawserver}.py $install_path -rf
-yes | cp -rf "$tmp/scrappers" "$install_path"
-# cp "$install_path/scrappers/*" "$install_path/scrappers/*"
+yes | cp -rf "$tmp/old_scrapers" "$install_path"
+# cp "$install_path/old_scrapers/*" "$install_path/old_scrapers/*"
 echo "$(which python3) '$install_path/anime.py' \$@" > "$install_path/anime.sh"
 
 if [ ! -x "$install_path/anime.sh" ]; then

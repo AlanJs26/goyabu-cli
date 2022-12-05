@@ -1,12 +1,11 @@
 from scraper import Scraper,Anime,Episode,VideoUrl
-from scrappers.utils import animeTitle2Id
+from utils import animeTitle2Id
 
 from typing import List
 
 import requests
 from bs4 import BeautifulSoup as bs4
 from lxml import etree
-import re
 
 class AnimeFire(Scraper):
     def __init__(self):

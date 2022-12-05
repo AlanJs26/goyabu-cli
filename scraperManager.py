@@ -1,9 +1,9 @@
 from typing import List
 from scraper import Scraper,Anime,bindScrapers
-# from scrapersversiontwo.goyabuNew import Goyabu
-from scrapersversiontwo.animefire import AnimeFire
+from scrapers.goyabuNew import Goyabu
+from scrapers.animefire import AnimeFire
 
-SCRAPERS:List[Scraper] = [AnimeFire()]
+SCRAPERS:List[Scraper] = [AnimeFire(), Goyabu()]
 
 
 class ScraperManager():
@@ -15,13 +15,11 @@ class ScraperManager():
 
     @bindScrapers
     def search(self, query:str) -> List[Anime]:
-        animes = []
         for scraper in self.scrapers:
             for anime in scraper.search(query):
-                animes.append(anime)
                 self._addAnime(anime)
 
-        return animes
+        return list(self.animes.values())
 
     def searchLocal(self, query:str) -> List[Anime]:
         return [Anime('title', 'anime1')]

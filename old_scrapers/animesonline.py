@@ -6,7 +6,7 @@ import requests
 import re
 # from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from scrappers.utils import infoDecorator
+from utils import infoDecorator
 #  from utils import infoDecorator
 
 

@@ -3,8 +3,8 @@ from typing import Dict, List, Optional, Union
 # from tqdm import tqdm
 import requests
 
-from scrappers.utils import infoDecorator
-from scrappers.goyabu import goyabuEpisodesNum
+from utils import infoDecorator
+from old_scrapers.goyabu import goyabuEpisodesNum
 
 # from utils import infoDecorator
 # from goyabu import goyabuEpisodesNum

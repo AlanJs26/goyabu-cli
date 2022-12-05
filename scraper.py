@@ -1,7 +1,7 @@
 from typing import List,Tuple,Set,Dict
 
 class VideoUrl():
-    def __init__(self, url, quality, lang, source, scrapers:List['Scraper']=[], ready=False):
+    def __init__(self, url:str, quality:str, lang:str, source:str, scrapers:List['Scraper']=[], ready=False):
         self.scrapers = scrapers
         self.url = url
         self.source = source
@@ -120,7 +120,9 @@ class Anime():
         self.availableScrapers = [source]
 
         self.source = source
-        self.pageUrl = pageUrl
+        self.pageUrl:Dict[str,str] = {
+            source: pageUrl
+        }
 
     def retrieveEpisodes(self) -> List[Episode]:
         right_scraper = next((scraper for scraper in self.scrapers if scraper.name == self.source), None)
@@ -128,10 +130,9 @@ class Anime():
         if right_scraper == None:
             raise LookupError(f"Cannot find matching scraper for '{self.source}'")
 
-        for index,episode in enumerate(right_scraper.episodes(self.pageUrl)):
+        for index,episode in enumerate(right_scraper.episodes(self.pageUrl[self.source])):
             episode.index = index
             self._addEpisode(episode)
-            # self.episodes[episode.id] = episode
 
         return list(self.episodes.values())
 
@@ -150,6 +151,7 @@ class Anime():
 
     def merge(self, new_anime:'Anime'):
         self.availableScrapers = list(set([*self.availableScrapers,*new_anime.availableScrapers]))
+        self.pageUrl = {**self.pageUrl, **new_anime.pageUrl}
 
         for episode in new_anime.episodes.values():
             self._addEpisode(episode)

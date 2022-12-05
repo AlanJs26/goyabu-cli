@@ -7,7 +7,7 @@ from time import sleep
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from json import loads as load_json
 
-from scrappers.utils import infoDecorator
+from utils import infoDecorator
 #  from utils import infoDecorator
 
 #  from rich import print

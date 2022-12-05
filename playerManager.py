@@ -1,6 +1,6 @@
 from os import path,system
 from time import sleep
-from typing import List, Tuple, TypedDict
+from typing import List, TypedDict
 from scraper import Episode
 from dropdown import isWindows
 
@@ -29,14 +29,6 @@ class PlayerManager():
 
         mpvEpIndex = 1 # Current anime playing 
 
-        # Update mpvEpIndex with the current episode every time a new episodes begin
-        @mpv.property_observer('media-title')
-        def media_title_ob(name, value):
-            if not name or not value or 'Ep ' not in value: return
-            global mpvEpIndex
-            mpvEpIndex = int(value.split('-')[0].replace('Ep ', ''))
-
-
         # -----
         mpv.playlist_pos = 0
         mpv.play(path)
@@ -47,14 +39,29 @@ class PlayerManager():
 
         playback_time = 0
 
+        working=False
+
         try:
             while mpv.playlist_play_index != 'none' and mpv.media_title:
                 sleep(1)
                 playback_time = mpv.playback_time
-        except:
-            return {"lastEpisode": mpvEpIndex, "watchTime": int(playback_time or 0)}
 
-        return {"lastEpisode": mpvEpIndex, "watchTime": int(mpv.playback_time or 0)}
+                if not mpv.media_title or 'Ep ' not in mpv.media_title:
+                    continue
+                mpvEpIndex = int(mpv.media_title.split('-')[0].replace('Ep ', ''))
+                working=True
+        except:
+            pass
+
+        if not working:
+            print('\nparece que o link deste anime não está funcionando :(\nTente um anime diferente.')
+
+        try:
+            mpv.command('quit')
+        except:
+            print('Saindo do MPV...')
+
+        return {"lastEpisode": mpvEpIndex, "watchTime": int(playback_time or 0)}
 
     def play(self, path:str, player_path:str) -> PlayerManagerResults:
         system(f'{player_path} "{path}"')

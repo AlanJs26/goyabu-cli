@@ -1,5 +1,5 @@
 from scraper import Scraper,Anime,Episode,VideoUrl
-from scrappers.utils import animeTitle2Id
+from utils import animeTitle2Id
 
 from typing import List
 
@@ -13,17 +13,17 @@ class Goyabu(Scraper):
         super().__init__('goyabu', ['pt'])
         self.scrapers
 
-    def parseLink(self, url:str) -> str:
+    def parseLink(self, link:VideoUrl) -> List[VideoUrl]:
         headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
-        html=requests.get(url, headers=headers).text 
+        html=requests.get(link.url, headers=headers).text 
 
         allmatches = re.findall(r"(?<=src=').+kanra\.dev.+?(?=')", html)
         allmatches = list(filter(bool, allmatches))
         if not allmatches:
-            return ''
+            return []
 
-        return allmatches[0]
+        return [VideoUrl(allmatches[0],'sd', 'pt', self.name)]
 
     def search(self, query:str) -> List[Anime]:
         html = requests.get(f'https://goyabu.com/?s={query.replace(" ","+")}').text
