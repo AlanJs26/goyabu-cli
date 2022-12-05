@@ -1,9 +1,11 @@
-from typing import List
 from scraper import Scraper,Anime,Episode,VideoUrl
+from scrappers.utils import animeTitle2Id
+
+from typing import List
+
 import requests
 from bs4 import BeautifulSoup as bs4
 from lxml import etree
-from scrappers.utils import animeTitle2Id
 import re
 
 class Goyabu(Scraper):

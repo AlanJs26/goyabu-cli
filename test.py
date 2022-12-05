@@ -1,17 +1,15 @@
-from manager import Manager
-import termtables as tt
-from dropdown import interactiveTable, HighlightedTable
+from scraperManager import ScraperManager
 from sessionManager import SessionManager
 from playerManager import PlayerManager
+from dropdown import interactiveTable, HighlightedTable
+import termtables as tt
 
-manager = Manager()
+manager = ScraperManager()
 sessionmanager = SessionManager(scrapers=manager.scrapers)
 
 session_item = sessionmanager.select()
 
 if isinstance(session_item,str):
-    print(session_item)
-
     animes = manager.search('boku no hero')
 
     anime_names = [['',anime.title] for anime in animes]
@@ -63,6 +61,9 @@ if len(anime.availableScrapers) > 1:
 episodes = anime.retrieveEpisodes()
 episodes_names = [['', episode.title] for episode in episodes]
 
+if not episodes:
+    raise Exception(f'Cannot find any episode for {anime.title}')
+
 table = HighlightedTable(
     episodes_names,
     ['', "Episódios"],
@@ -92,7 +93,7 @@ if choice not in ['', 'S', 's']:
     )
 
     if results['items'] is None:
-        print("Please select episodes with 'c' or 'spacebar'")
+        print("You can items with 'c' or 'spacebar'")
         exit()
 
     episodes = [episodes[i] for i in results['items']]
@@ -100,28 +101,25 @@ if choice not in ['', 'S', 's']:
 for episode in episodes:
     episode.retrieveLinks(anime.source)
 
-    for link in episode.getLinksBySource(anime.source):
-        print(link.url)
-
 player = PlayerManager(anime.title, anime.source, episodes)
 
 playlist_file = player.generatePlaylistFile()
+
+print(f'Abrindo "{playlist_file}"...')
 
 if player.isMpvAvailable():
     results = player.playWithMPV(playlist_file)
 else:
     results = player.play(playlist_file, 'mpv')
 
-print(results)
 
-# sessionmanager.add([anime])
-#
-# sessionmanager.update(anime, results['lastEpisode'], results['watchTime'])
-#
-# sessionmanager.dump()
+sessionmanager.add([anime])
+
+sessionmanager.update(anime, results['lastEpisode'], results['watchTime'])
+
+sessionmanager.dump()
 
 
-# print(goyabu.episodes(url)[0].availableLanguages())
 
 
 

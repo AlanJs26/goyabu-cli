@@ -1,24 +1,23 @@
 from typing import List,Tuple,Set,Dict
 
 class VideoUrl():
-    def __init__(self, url, quality, lang, source, scrapers:List['Scraper']=[]):
+    def __init__(self, url, quality, lang, source, scrapers:List['Scraper']=[], ready=False):
         self.scrapers = scrapers
         self.url = url
         self.source = source
-        self.ready = False
+        self.ready = ready
         self.lang = lang
         self.quality = quality # sd,hd,full-hd,ultra-hd
 
-    def getLink(self):
+    def getLink(self) -> List['VideoUrl']:
         right_scraper = next((scraper for scraper in self.scrapers if scraper.name == self.source), None)
 
         if right_scraper == None:
             raise LookupError(f"Cannot find matching scraper for '{self.source}'")
 
-        self.url = right_scraper.parseLink(self.url)
+        found_links = right_scraper.parseLink(self)
 
-        self.ready = True
-        return self.url
+        return found_links
 
 
     def test(self) -> bool:
@@ -53,17 +52,24 @@ class Episode():
 
         return videoUrls
 
-    def retrieveLinks(self, sourceName:str):
-        right_source = next((source[1] for source in self.sources if source[0] == sourceName),None)
+    def retrieveLinks(self, scraperName:str):
+        right_scraper = next((source[1] for source in self.sources if source[0] == scraperName),None)
 
         if not self.scrapers:
             raise LookupError(f"Cannot access scrapers in episode {self.title}")
 
-        if right_source == None:
-            raise LookupError(f"Cannot find matching source for '{sourceName}' in episode {self.title}")
+        if right_scraper == None:
+            raise LookupError(f"Cannot find matching source for '{scraperName}' in episode {self.title}")
 
-        for source in right_source:
-            source.getLink()
+        found_links = []
+        for source in right_scraper:
+            found_links.extend(source.getLink())
+
+        right_scraper.extend(found_links)
+
+        for source in right_scraper.copy():
+            if not source.ready or not source.test():
+                right_scraper.remove(source)
 
     def availableLanguages(self) -> List[str]:
         langs : Set[str] = set()
@@ -154,7 +160,7 @@ class Scraper():
         self.name = name
         self.lang = lang
 
-    def parseLink(self, url:str) -> str:
+    def parseLink(self, link:VideoUrl) -> List[VideoUrl]:
         raise NotImplementedError(f"parseLink not implemented for '{self.name}'")
 
     def search(self, query:str) -> List[Anime]:

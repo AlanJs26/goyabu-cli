@@ -45,10 +45,16 @@ class PlayerManager():
         mpv.command('playlist-play-index', self.playlistPos)
         mpv.command('keypress', 'space')
 
-        while mpv.wait_for_property('playlist-play-index') != 'none':
-            pass
+        playback_time = 0
 
-        return {"lastEpisode": mpvEpIndex, "watchTime": int(mpv.playback_time)}
+        try:
+            while mpv.playlist_play_index != 'none' and mpv.media_title:
+                sleep(1)
+                playback_time = mpv.playback_time
+        except:
+            return {"lastEpisode": mpvEpIndex, "watchTime": int(playback_time or 0)}
+
+        return {"lastEpisode": mpvEpIndex, "watchTime": int(mpv.playback_time or 0)}
 
     def play(self, path:str, player_path:str) -> PlayerManagerResults:
         system(f'{player_path} "{path}"')

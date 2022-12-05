@@ -391,7 +391,7 @@ if __name__ == "__main__":
         tablelist,
         ['' ,"Episódios", "Nome"],
         "rcc",
-        # behaviour='multiSelectWithText',
+        behaviour='multiSelect',
         maxListSize=7,
         staticHighlights=staticHighlights,
         highlightRange=(2,2)

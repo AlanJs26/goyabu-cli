@@ -1,5 +1,6 @@
 auth.txt
 .anime-lastsession.json
+*.m3u
 ./**/__pycache__
 __pycache__
 anime.sh

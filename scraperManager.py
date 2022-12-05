@@ -1,15 +1,16 @@
 from typing import List
 from scraper import Scraper,Anime,bindScrapers
-from scrapersversiontwo.goyabuNew import Goyabu
+# from scrapersversiontwo.goyabuNew import Goyabu
+from scrapersversiontwo.animefire import AnimeFire
 
-SCRAPERS:List[Scraper] = [Goyabu()]
+SCRAPERS:List[Scraper] = [AnimeFire()]
 
 
-class Manager():
+class ScraperManager():
     def __init__(self):
         self.scrapers = SCRAPERS
         self.animes = {
-            'id1' : Anime('title', 'anime1')
+            # 'id1' : Anime('title', 'anime1')
         }
 
     @bindScrapers
