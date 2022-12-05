@@ -208,7 +208,7 @@ def _multiselectionTable(key: str, table:HighlightedTable, highlightList: List[T
             ignoredKeys = ['j', 'k', '[', 'q']
 
     newHighlighList = []
-    if key == "c" or ord(key) == 32 or key == ' ':
+    if highlightPos < len(table.tableLines) and (key == "c" or ord(key) == 32 or key == ' '):
         newHighlighList = [item for item in highlightList[1:] if item['pos'] != currentHightlight['pos']]
 
         newHighlighList = [currentHightlight, *newHighlighList]
@@ -352,9 +352,11 @@ def interactiveTable(
     # termios.tcsetattr(sys.stdin, termios.TCSADRAIN, filedescriptors)
     endRawmode()
 
+    print(highlights)
+
     selectedItems = {item['pos']: items[item['pos']] for item in highlights if item['color'] == 'fail'}
     return {
-        'selectedPos': highlightPos if highlightPos <len(items) else None,
+        'selectedPos': highlightPos if highlightPos < len(items) else None,
         'selectedItem': items[highlightPos] if highlightPos<len(items) else None,
         'items': selectedItems if selectedItems else None,
         'text': inputText
