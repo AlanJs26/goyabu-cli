@@ -19,7 +19,7 @@ class PlayerManager():
     def isMpvAvailable(self) -> bool:
         return True
 
-    def playWithMPV(self, path:str) -> PlayerManagerResults:
+    def playWithMPV(self, path:str, seek_time=0, playlistPos=0) -> PlayerManagerResults:
         from python_mpv_jsonipc import MPV
 
         if isWindows:
@@ -32,19 +32,32 @@ class PlayerManager():
         # -----
         mpv.playlist_pos = 0
         mpv.play(path)
-        mpv.command('keypress', 'space')
-        sleep(2)
-        mpv.command('playlist-play-index', self.playlistPos)
-        mpv.command('keypress', 'space')
 
-        playback_time = 0
+        mpv.pause = True
+        
+        timeout = 0
+        while (not mpv.media_title or not mpv.seekable) and timeout < 100:
+            sleep(0.2)
+            timeout += 1
+
+        if playlistPos:
+            mpv.command('playlist-play-index', playlistPos)
+
+            timeout = 0
+            while (not mpv.media_title or not mpv.seekable or mpv.playlist_playing_pos != playlistPos) and timeout < 100 :
+                sleep(0.2)
+                timeout += 1
+
+            mpv.time_pos = seek_time
+
+        mpv.pause = False
 
         working=False
 
         try:
-            while mpv.playlist_play_index != 'none' and mpv.media_title:
+            while mpv.media_title:
                 sleep(1)
-                playback_time = mpv.playback_time
+                seek_time = mpv.playback_time
 
                 if not mpv.media_title or 'Ep ' not in mpv.media_title:
                     continue
@@ -61,7 +74,7 @@ class PlayerManager():
         except:
             print('Saindo do MPV...')
 
-        return {"lastEpisode": mpvEpIndex, "watchTime": int(playback_time or 0)}
+        return {"lastEpisode": mpvEpIndex, "watchTime": int(seek_time or 0)}
 
     def play(self, path:str, player_path:str) -> PlayerManagerResults:
         system(f'{player_path} "{path}"')
@@ -72,11 +85,13 @@ class PlayerManager():
         fileText = '#EXTM3U\n\n' 
         resolutionRanking = ['ultra-hd', 'full-hd', 'hd', 'sd']
 
-        for index,episode in enumerate(self.episodes):
-            fileText+=f'#EXTINF:-1,Ep {index+1} - {episode.title.replace("#", "")}\n'
+        for episode in self.episodes:
+            fileText+=f'#EXTINF:-1,Ep {episode.id} - {episode.title.replace("#", "")}\n'
             sorted_links = sorted(episode.getLinksBySource(self.scraperName), key=lambda x:resolutionRanking.index(x.quality))
-            for link in sorted_links:
-                fileText+=f'{link.url}\n'
+
+            fileText+=f'{sorted_links[0].url}\n'
+            # for link in sorted_links:
+            #     fileText+=f'{link.url}\n'
 
         file_path = path.join(self.root, self.title+".m3u")
 

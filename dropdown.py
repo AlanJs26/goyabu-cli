@@ -352,8 +352,6 @@ def interactiveTable(
     # termios.tcsetattr(sys.stdin, termios.TCSADRAIN, filedescriptors)
     endRawmode()
 
-    print(highlights)
-
     selectedItems = {item['pos']: items[item['pos']] for item in highlights if item['color'] == 'fail'}
     return {
         'selectedPos': highlightPos if highlightPos < len(items) else None,

@@ -1,16 +1,16 @@
 from scraperManager import ScraperManager
 from sessionManager import SessionManager
 from playerManager import PlayerManager
-from dropdown import interactiveTable, HighlightedTable
+from dropdown import interactiveTable
 from typing import Dict
 import termtables as tt
 
 
-def mainTUI(default_anime_name:str, default_player:str, default_range:Dict[str,int], default_root:str, always_yes:bool):
+def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,int], default_root:str, always_yes:bool):
     manager = ScraperManager()
     sessionmanager = SessionManager(scrapers=manager.scrapers, root=default_root)
 
-    session_item = default_anime_name or sessionmanager.select()
+    session_item = sessionmanager.select(query=default_anime_name)
 
     if isinstance(session_item,str):
         animes = manager.search(session_item)
@@ -75,10 +75,10 @@ def mainTUI(default_anime_name:str, default_player:str, default_range:Dict[str,i
     episodes_names = [['', episode.title] for episode in episodes]
 
     if not episodes:
-        raise Exception(f'Cannot find any episode for {anime.title}')
+        print(f"Não foi possível acessar os episódios de '{anime.title}' usando '{anime.source}'")
+        exit()
 
     if not always_yes:
-
         results = interactiveTable(
             episodes_names,
             ['','Episodios'],
@@ -109,13 +109,17 @@ def mainTUI(default_anime_name:str, default_player:str, default_range:Dict[str,i
                 exit()
 
         if results['items']:
+            episodes_range['start'] = min(results['items'].keys())
+            episodes_range['end'] = max(results['items'].keys())
+
             episodes = [episodes[i] for i in results['items']]
+    elif episodes_range['end'] - episodes_range['start'] != 0:
+        episodes = episodes[slice(episodes_range['start'], episodes_range['end'])]
 
-        for episode in episodes:
-            episode.retrieveLinks(anime.source)
-    else:
-        episodes = episodes[slice(default_range['start'], default_range['end'])]
+    for episode in episodes:
+        episode.retrieveLinks(anime.source)
 
+    session_anime = sessionmanager.find(anime)
 
     player = PlayerManager(anime.title, anime.source, episodes)
 
@@ -124,7 +128,19 @@ def mainTUI(default_anime_name:str, default_player:str, default_range:Dict[str,i
     print(f'Abrindo "{playlist_file}"...')
 
     if player.isMpvAvailable() and default_player == 'mpv':
-        results = player.playWithMPV(playlist_file)
+        if session_anime:
+            last_watch_pos = session_anime.lastEpisode
+            seek_time = session_anime.watchTime
+        else:
+            last_watch_pos = 0
+            seek_time = 0
+
+        ep_ids = [ep.index for ep in episodes]
+        start_pos = 0
+        if last_watch_pos-1 in ep_ids:
+            start_pos = ep_ids.index(last_watch_pos-1)
+
+        results = player.playWithMPV(playlist_file, seek_time=seek_time, playlistPos=start_pos)
     else:
         results = player.play(playlist_file, default_player)
 
@@ -133,7 +149,7 @@ def mainTUI(default_anime_name:str, default_player:str, default_range:Dict[str,i
 
     sessionmanager.update(anime, results['lastEpisode'], results['watchTime'])
 
-    sessionmanager.dump()
+    # sessionmanager.dump()
 
 
 

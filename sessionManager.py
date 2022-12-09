@@ -8,13 +8,13 @@ from utils import getTotalEpisodesCount
 from dropdown import interactiveTable,bcolors
 
 class SessionItem():
-    def __init__(self, anime:Anime, date_utc:int, episodesInTotal:int, availableEpisodes:int, lastEpisode:int, lastSource:str):
+    def __init__(self, anime:Anime, date_utc:int, episodesInTotal:int, availableEpisodes:int, lastEpisode:int, lastSource:str, watchTime=0):
         self.anime = anime
 
         self.date_utc = datetime.fromtimestamp(date_utc,timezone.utc)
         self.episodesInTotal = episodesInTotal
         self.availableEpisodes = availableEpisodes
-        self.watchTime = 0
+        self.watchTime = watchTime
         self.lastEpisode = lastEpisode
         self.lastSource = lastSource
 
@@ -52,6 +52,11 @@ class SessionManager():
 
         self.session_items = []
         self.session_items = self.load()
+
+    def find(self, anime:Anime) -> Union[SessionItem,None]:
+        found_anime = next((item for item in self.session_items if item.anime.id == anime.id), None)
+
+        return found_anime
 
     def add(self, animes:List[Anime]):
         all_ids = [item.id for item in self.session_items]
@@ -104,6 +109,7 @@ class SessionManager():
                 json_anime['availableEpisodes'],
                 json_anime['lastEpisode'],
                 json_anime['lastSource'],
+                watchTime=json_anime['watchTime']
             ))
         
         return session_items
@@ -126,7 +132,12 @@ class SessionManager():
         with open(path.join(self.root,self.filename), 'w') as file:
             json.dump(content, file)
 
-    def select(self, hintText='Digite: ', maxListSize=5, width=0, flexColumn=0) -> Union[SessionItem,str]:
+    def select(self, hintText='Digite: ', maxListSize=5, width=0, flexColumn=0, query='') -> Union[SessionItem,str]:
+
+        if query:
+            if query.isdigit():
+                return self.session_items[len(self.session_items)-int(query)]
+            return query
 
         def format_status(session_item:SessionItem) -> str:
             status = f"Episodio {session_item.lastEpisode} [{session_item.availableEpisodes}/{session_item.episodesInTotal}]"

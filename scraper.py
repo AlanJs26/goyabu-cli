@@ -133,6 +133,7 @@ class Anime():
         for index,episode in enumerate(right_scraper.episodes(self.pageUrl[self.source])):
             episode.index = index
             self._addEpisode(episode)
+            # self.episodes[episode.id] = episode
 
         return list(self.episodes.values())
 
