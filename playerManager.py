@@ -1,4 +1,4 @@
-from os import path,system
+from os import path,system,makedirs
 from time import sleep
 from typing import List, TypedDict
 from scraper import Episode
@@ -15,6 +15,12 @@ class PlayerManager():
         self.root = root
         self.title = title
         self.episodes = episodes
+
+        self.playlist_folder = path.join(root,'playlists/')
+
+        if not path.isdir(self.playlist_folder):
+            makedirs(self.playlist_folder, exist_ok=True)
+
 
     def isMpvAvailable(self) -> bool:
         return True
@@ -93,7 +99,7 @@ class PlayerManager():
             # for link in sorted_links:
             #     fileText+=f'{link.url}\n'
 
-        file_path = path.join(self.root, self.title+".m3u")
+        file_path = path.join(self.playlist_folder, self.title+".m3u")
 
         with open(file_path, 'w') as file:
             file.writelines(fileText)

@@ -121,7 +121,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
 
     session_anime = sessionmanager.find(anime)
 
-    player = PlayerManager(anime.title, anime.source, episodes)
+    player = PlayerManager(anime.title, anime.source, episodes, root=default_root)
 
     playlist_file = player.generatePlaylistFile()
 
@@ -149,7 +149,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
 
     sessionmanager.update(anime, results['lastEpisode'], results['watchTime'])
 
-    # sessionmanager.dump()
+    sessionmanager.dump()
 
 
 

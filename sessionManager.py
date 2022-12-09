@@ -2,7 +2,7 @@ from scraper import Anime,Scraper
 from typing import List,Union
 from datetime import timezone
 from datetime import datetime
-from os import path
+from os import path, makedirs
 import json
 from utils import getTotalEpisodesCount
 from dropdown import interactiveTable,bcolors
@@ -45,6 +45,9 @@ class SessionManager():
             self.root = root
         else:
             self.root = path.dirname(__file__)
+
+        if not path.isdir(root):
+            makedirs(root, exist_ok=True)
 
         if not path.isfile(path.join(root,self.filename)):
             with open(path.join(root,self.filename), 'w') as file:

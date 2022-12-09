@@ -1,5 +1,5 @@
 from argparse import RawTextHelpFormatter, ArgumentParser
-from utils import dir_path
+from os import path,makedirs
 from sessionManager import SessionManager
 from main import mainTUI
 
@@ -8,6 +8,28 @@ def range_parser(string):
 
     slicestring = [*string.split(':'), ''][:2]
     return {'start':slicestring[0]-1, 'end':slicestring[1]-1}
+
+def dir_path(string):
+    if string == '': return ''
+    new_string = path.expanduser(string)
+
+    if string == '~/.goyabucli':
+        makedirs(new_string)
+
+    if path.isdir(new_string):
+        return new_string
+    else:
+        print(f"'{string}' is not a path to a directory")
+        print(f"do you want to create it?")
+        choice = str(input('[y/N]: '))
+
+        if choice.lower() == 'y':
+            makedirs(new_string)
+            return new_string
+
+        print("Exiting")
+        exit()
+
 
 parser = ArgumentParser(description='plays anime from terminal', formatter_class=RawTextHelpFormatter)
 
@@ -23,7 +45,7 @@ parser.add_argument('--update',      action='store_true',
                     help='fetch the latest information for the animes in history')
 parser.add_argument('--server',      action='store_true',         
                     help='serves a list of animes as a m3u playlist through the network. Use colons (,) to split each anime')
-parser.add_argument('--config-dir',    action='store', default='',    type=dir_path, metavar='config directory',
+parser.add_argument('--config-dir',    action='store', default='~/.goyabucli',    type=dir_path, metavar='config directory',
                     help='directory for the watch list')
 
 args = parser.parse_args()
@@ -41,4 +63,4 @@ if args.update:
 
     print('O total de episódios dos animes do histórico foram sincronizados')
 else:
-    mainTUI(' '.join(args.name), args.player, args.episodes, args.config_dir, args.yes)
+    mainTUI(' '.join(args.name), args.player, args.episodes, path.expanduser(args.config_dir), args.yes)

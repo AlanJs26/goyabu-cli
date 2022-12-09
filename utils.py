@@ -57,14 +57,6 @@ def animeTitle2Id(title:str):
     # except:
     #     return title
 
-def dir_path(string):
-    if string == '': return ''
-    new_string = path.expanduser(string)
-    if path.isdir(new_string):
-        return new_string
-    else:
-        raise NotADirectoryError(string)
-
 def nameTrunc(text, length):
     columns = get_terminal_size().columns
     if columns < length:
