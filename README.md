@@ -110,7 +110,7 @@ I recommend my [MPV config](https://github.com/AlanJs26/mpv), it comes with a pr
 
 ## To-do
 
-- [  ] upload project to pypi
-- [  ] add more sources
+- [ ] upload project to pypi
+- [ ] add more sources
 
 
