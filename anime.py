@@ -14,7 +14,7 @@ def dir_path(string):
     new_string = path.expanduser(string)
 
     if string == '~/.goyabucli':
-        makedirs(new_string)
+        makedirs(new_string, exist_ok=True)
 
     if path.isdir(new_string):
         return new_string
@@ -24,7 +24,7 @@ def dir_path(string):
         choice = str(input('[y/N]: '))
 
         if choice.lower() == 'y':
-            makedirs(new_string)
+            makedirs(new_string, exist_ok=True)
             return new_string
 
         print("Exiting")
@@ -51,6 +51,7 @@ parser.add_argument('--config-dir',    action='store', default='~/.goyabucli',  
 args = parser.parse_args()
 
 # TODO -> implement on demand server TUI
+# TODO -> implement scraper filter to anime selection
 # TODO -> implement configuration TUI
 #   TODO -> config file
 # TODO -> add english translation
