@@ -4,19 +4,21 @@ from playerManager import PlayerManager
 from dropdown import interactiveTable
 from typing import Dict
 import termtables as tt
+from tqdm import tqdm
+from translation import t
 
 
 def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,int], default_root:str, always_yes:bool):
     manager = ScraperManager()
     sessionmanager = SessionManager(scrapers=manager.scrapers, root=default_root)
 
-    session_item = sessionmanager.select(query=default_anime_name)
+    session_item = sessionmanager.select(query=default_anime_name, maxListSize=10)
 
     if isinstance(session_item,str):
         animes = manager.search(session_item)
 
         if not animes:
-            print(f"Nenhum anime encontrado com o nome '{session_item}'")
+            print(t("Nenhum anime encontrado com o nome '{}'", session_item))
             exit()
 
         anime_names = [['',anime.title, ','.join(anime.pageUrl.keys())] for anime in animes]
@@ -24,7 +26,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
         if not always_yes:
             results = interactiveTable(
                 anime_names,
-                ['','Animes', 'Fonte'],
+                ['',t('Animes'), t('Fonte')],
                 'llc',
                 maxListSize=7,
                 highlightRange=(2,2),
@@ -45,7 +47,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
 
     tt.print(
         [[anime.title]],
-        header=["Anime Selecionado"],
+        header=[t("Anime Selecionado")],
         style=tt.styles.rounded,
         alignment="c",
     )
@@ -54,7 +56,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
         if not always_yes:
             results = interactiveTable(
                 [['',scraperName] for scraperName in anime.availableScrapers],
-                ['','Escolha uma fonte'],
+                ['',t('Escolha uma fonte')],
                 'll',
                 behaviour='single',
                 maxListSize=10,
@@ -64,7 +66,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
             )
 
             if results['selectedItem'] is None:
-                raise Exception('Cannot select scraper')
+                raise Exception(t('Não foi possível selecionar uma fonte'))
 
             anime.source = results['selectedItem'][1]
         else:
@@ -75,27 +77,27 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
     episodes_names = [['', episode.title] for episode in episodes]
 
     if not episodes:
-        print(f"Não foi possível acessar os episódios de '{anime.title}' usando '{anime.source}'")
+        print(t("Não foi possível acessar os episódios de '{}' usando '{}'", anime.title, anime.source))
         exit()
 
     if not always_yes:
         results = interactiveTable(
             episodes_names,
-            ['','Episodios'],
+            ['',t('Episodios')],
             'll',
             behaviour='multiSelectWithText',
             maxListSize=13,
             highlightRange=(1,1),
             width=20,
             flexColumn=1,
-            hintText='deseja assistir todos os episódios? [S/n]: '
+            hintText=t('deseja assistir todos os episódios? [S/n]: ')
         )
 
 
         if results['text'] not in ['', 'S', 's']:
             results = interactiveTable(
                 episodes_names,
-                ['','Episodios'],
+                ['',t('Episodios')],
                 'll',
                 behaviour='multiSelect',
                 maxListSize=13,
@@ -105,7 +107,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
             )
 
             if results['items'] is None:
-                print("É possível selecionar os episódios usando 'c' ou a barra de espaço")
+                print(t("É possível selecionar os episódios usando 'c' ou a barra de espaço"))
                 exit()
 
         if results['items']:
@@ -116,7 +118,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
     elif episodes_range['end'] - episodes_range['start'] != 0:
         episodes = episodes[slice(episodes_range['start'], episodes_range['end'])]
 
-    for episode in episodes:
+    for episode in tqdm(episodes, postfix=t("Links carregados"), ascii=True, leave=False, bar_format='|{bar}| {n_fmt}/{total_fmt}{postfix}'):
         episode.retrieveLinks(anime.source)
 
     session_anime = sessionmanager.find(anime)
@@ -125,7 +127,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
 
     playlist_file = player.generatePlaylistFile()
 
-    print(f'Abrindo "{playlist_file}"...')
+    print(t('Abrindo "{}"...', playlist_file))
 
     if player.isMpvAvailable() and default_player == 'mpv':
         if session_anime:

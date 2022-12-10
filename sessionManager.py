@@ -6,6 +6,7 @@ from os import path, makedirs
 import json
 from utils import getTotalEpisodesCount
 from dropdown import interactiveTable,bcolors
+from translation import t
 
 class SessionItem():
     def __init__(self, anime:Anime, date_utc:int, episodesInTotal:int, availableEpisodes:int, lastEpisode:int, lastSource:str, watchTime=0):
@@ -69,6 +70,10 @@ class SessionManager():
                 right_sessionItem.lastSource = anime.source
                 right_sessionItem.availableEpisodes = len(anime.episodes)
                 right_sessionItem.anime = anime
+
+                # Move session item to the end of the list
+                self.session_items.remove(right_sessionItem)
+                self.session_items.append(right_sessionItem)
             else:
                 self.session_items.append(
                     SessionItem(
@@ -135,7 +140,7 @@ class SessionManager():
         with open(path.join(self.root,self.filename), 'w') as file:
             json.dump(content, file)
 
-    def select(self, hintText='Digite: ', maxListSize=5, width=0, flexColumn=0, query='') -> Union[SessionItem,str]:
+    def select(self, hintText=t('Digite: '), maxListSize=5, width=0, flexColumn=0, query='') -> Union[SessionItem,str]:
 
         if query:
             if query.isdigit():
@@ -143,10 +148,10 @@ class SessionManager():
             return query
 
         def format_status(session_item:SessionItem) -> str:
-            status = f"Episodio {session_item.lastEpisode} [{session_item.availableEpisodes}/{session_item.episodesInTotal}]"
+            status = t("Episodio {} [{}/{}]", session_item.lastEpisode, session_item.availableEpisodes, session_item.episodesInTotal)
 
             if session_item.status == 'complete':
-                status = bcolors['green']+"Completo"+bcolors['end']
+                status = bcolors['green']+t("Completo")+bcolors['end']
             elif session_item.status == 'insync':
                 status = bcolors['grey']+status+bcolors['end']
 
@@ -160,7 +165,7 @@ class SessionManager():
 
         results = interactiveTable(
             table_rows,
-            ['' ,"Sessoes anteriores", "Status"],
+            ['' ,t("Sessoes anteriores"), t("Status")],
             "ccc",
             behaviour='multiSelectWithText',
             maxListSize=maxListSize,
