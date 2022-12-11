@@ -1,12 +1,13 @@
-from scraper import Anime,Scraper
+from goyabucli.scraper import Anime,Scraper
 from typing import List,Union
 from datetime import timezone
 from datetime import datetime
 from os import path, makedirs
 import json
-from utils import getTotalEpisodesCount
-from dropdown import interactiveTable,bcolors
-from translation import t
+from goyabucli.utils import getTotalEpisodesCount
+from goyabucli.dropdown import interactiveTable,bcolors
+from goyabucli.translation import t
+
 
 class SessionItem():
     def __init__(self, anime:Anime, date_utc:int, episodesInTotal:int, availableEpisodes:int, lastEpisode:int, lastSource:str, watchTime=0):
@@ -122,25 +123,40 @@ class SessionManager():
         
         return session_items
 
-    def dump(self):
+    def dump(self, verbose=False, number_to_update=0):
         content = {}
 
-        for session_item in self.session_items:
+        pbar = None
+        if verbose:
+            from tqdm import tqdm
+            pbar = tqdm(total=len(self.session_items), postfix=t('Animes atualizados'), ascii=True, leave=False, bar_format='|{bar}| {n_fmt}/{total_fmt}{postfix}')
+
+        for i,session_item in enumerate(self.session_items):
+            if pbar:
+                pbar.update(1)
+
+            availableEpisodes = session_item.availableEpisodes
+            if number_to_update and i+1>len(self.session_items)-number_to_update:
+                availableEpisodes = len(session_item.anime.retrieveEpisodes())
+
             content[session_item.id] = {
                 'title': session_item.title,
                 'pageUrl': session_item.anime.pageUrl,
                 'utc': int(session_item.date_utc.timestamp()),
-                'episodesInTotal': getTotalEpisodesCount(session_item.title),
-                'availableEpisodes': session_item.availableEpisodes,
+                'episodesInTotal': getTotalEpisodesCount(session_item.title) or availableEpisodes,
+                'availableEpisodes': availableEpisodes,
                 'lastEpisode': session_item.lastEpisode,
                 'lastSource': session_item.lastSource,
                 'watchTime': session_item.watchTime
             }
 
+        if pbar:
+            pbar.close()
+
         with open(path.join(self.root,self.filename), 'w') as file:
             json.dump(content, file)
 
-    def select(self, hintText=t('Digite: '), maxListSize=5, width=0, flexColumn=0, query='') -> Union[SessionItem,str]:
+    def select(self, hintText=t('Digite: '), maxListSize=5, width=100, query='') -> Union[SessionItem,str]:
 
         if query:
             if query.isdigit():
@@ -170,7 +186,7 @@ class SessionManager():
             behaviour='multiSelectWithText',
             maxListSize=maxListSize,
             width=width,
-            flexColumn=flexColumn,
+            flexColumn=1,
             highlightRange=(2,2),
             hintText=hintText
         )

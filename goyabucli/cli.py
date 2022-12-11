@@ -1,11 +1,11 @@
-from scraperManager import ScraperManager
-from sessionManager import SessionManager
-from playerManager import PlayerManager
-from dropdown import interactiveTable
-from typing import Dict
+from goyabucli.scraperManager import ScraperManager
+from goyabucli.sessionManager import SessionManager
+from goyabucli.playerManager import PlayerManager
+from goyabucli.dropdown import interactiveTable
+from goyabucli.translation import t
 import termtables as tt
+from typing import Dict
 from tqdm import tqdm
-from translation import t
 
 
 def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,int], default_root:str, always_yes:bool):
@@ -151,7 +151,8 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
 
     sessionmanager.update(anime, results['lastEpisode'], results['watchTime'])
 
-    sessionmanager.dump()
+    print(t('Atualizando o histórico...'))
+    sessionmanager.dump(verbose=True, number_to_update=10)
 
 
 
