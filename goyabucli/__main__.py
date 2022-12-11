@@ -1,7 +1,9 @@
 from argparse import RawTextHelpFormatter, ArgumentParser
 from os import path,makedirs
-from sessionManager import SessionManager
-from main import mainTUI
+from goyabucli.sessionManager import SessionManager
+from goyabucli.scraperManager import SCRAPERS
+from goyabucli.cli import mainTUI
+from goyabucli.translation import t
 
 def range_parser(string):
     if string == '': return {'start':0, 'end':0}
@@ -54,14 +56,17 @@ args = parser.parse_args()
 # TODO -> implement scraper filter to anime selection
 # TODO -> implement configuration TUI
 #   TODO -> config file
-# TODO -> add english translation
 
-# print(getTotalEpisodesCount('boku no hero Academia'))
+def main():
+    if args.update:
+        print(t('Atualizando o histórico...'))
+        sessionmanager = SessionManager(root=args.config_dir, scrapers=SCRAPERS)
+        history_size = len(sessionmanager.session_items)
+        sessionmanager.dump(verbose=True, number_to_update=history_size)
 
-if args.update:
-    sessionmanager = SessionManager(root=args.config_dir)
-    sessionmanager.dump()
+        print('O total de episódios dos animes do histórico foram sincronizados')
+    else:
+        mainTUI(' '.join(args.name), args.player, args.episodes, path.expanduser(args.config_dir), args.yes)
 
-    print('O total de episódios dos animes do histórico foram sincronizados')
-else:
-    mainTUI(' '.join(args.name), args.player, args.episodes, path.expanduser(args.config_dir), args.yes)
+if __name__ == "__main__":
+    main()

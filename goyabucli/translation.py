@@ -52,6 +52,12 @@ translation = {
     "Status": {
         'en': 'Status',
     },
+    "Atualizando o histórico...": {
+        'en': 'Updating history...',
+    },
+    "Animes atualizados": {
+        'en': 'animes updated',
+    },
 }
 
 lang = 'en'

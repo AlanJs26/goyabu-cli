@@ -1,7 +1,7 @@
 from typing import List
-from scraper import Scraper,Anime,bindScrapers
-from scrapers.goyabuNew import Goyabu
-from scrapers.animefire import AnimeFire
+from goyabucli.scraper import Scraper,Anime,bindScrapers
+from goyabucli.scrapers.goyabuNew import Goyabu
+from goyabucli.scrapers.animefire import AnimeFire
 
 SCRAPERS:List[Scraper] = [AnimeFire(), Goyabu()]
 

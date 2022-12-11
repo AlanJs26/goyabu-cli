@@ -1,8 +1,8 @@
 from os import path,system,makedirs
 from time import sleep
 from typing import List, TypedDict
-from scraper import Episode
-from dropdown import isWindows
+from goyabucli.scraper import Episode
+from goyabucli.dropdown import isWindows
 
 class PlayerManagerResults(TypedDict):
     lastEpisode:int

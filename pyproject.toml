@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name="goyabu-cli"
+version="1.0.2"
+license = { file = "LICENSE" }
+readme = "README.md"
+authors=[{ name = "AlanJS26", email = "alanjoses.29@gmail.com" }]
+description="quickly play anime from terminal"
+keywords = ["python", "cli", "anime"]
+requires-python = ">=3.6"
+
+dependencies = [
+"beautifulsoup4==4.11.1",
+"lxml==4.9.1",
+"python_anilist==1.0.5",
+"python_mpv_jsonipc==1.1.13",
+"requests==2.28.1",
+"termtables==0.2.4",
+"tqdm==4.61.2",
+]
+
+[project.urls]
+Homepage="https://github.com/AlanJs26/goyabu-cli"
+
+[project.scripts]
+anime = "goyabucli.__main__:main"

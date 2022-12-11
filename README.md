@@ -3,8 +3,8 @@
 <!--## assista animes diretamente do terminal-->
 ## 😎 Watch animes without leaving the terminal!
 
-![Novo anime](./img/record1.gif)
-![Retomando uma sessão anterior](./img/record2.gif)
+![Novo anime](https://github.com/AlanJs26/goyabu-cli/blob/main/img/record1.gif?raw=true)
+![Retomando uma sessão anterior](https://github.com/AlanJs26/goyabu-cli/blob/main/img/record2.gif?raw=true)
 
 <!--digite `anime` e siga as instruções para utilizar.-->
 ## 🚀 How to use
@@ -24,10 +24,10 @@ Requirements:
 - Python 3
 - MPV player (recommended)
 
-Installation can be done using the install script:
+Installation can be done using pip:
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/AlanJs26/goyabu-cli/main/install.sh)
+pip install goyabu-cli
 ```
 
 <!--Com isso digitando `anime` no terminal, o programa deve funcionar-->
@@ -50,7 +50,7 @@ pip install -r requirements.txt
 ```
 
 <!--Assim o programa pode ser executado com `python anime.py` -->
-To run the program, type `python anime.py` in the program folder or add to your system path
+To run the program, type `python runner.py` in the program folder or add to your system path
 
 ## Available sources 
 
@@ -110,7 +110,7 @@ I recommend my [MPV config](https://github.com/AlanJs26/mpv), it comes with a pr
 
 ## To-do
 
-- [ ] upload project to pypi
+- [x] upload project to pypi
 - [ ] add more sources
 
 
