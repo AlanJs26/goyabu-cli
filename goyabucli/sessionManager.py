@@ -10,7 +10,7 @@ from goyabucli.translation import t
 
 
 class SessionItem():
-    def __init__(self, anime:Anime, date_utc:int, episodesInTotal:int, availableEpisodes:int, lastEpisode:int, lastSource:str, watchTime=0):
+    def __init__(self, anime:Anime, date_utc:int, episodesInTotal:int, availableEpisodes:int, lastEpisode:int, lastSource:str, watchTime=0, duration=0):
         self.anime = anime
 
         self.date_utc = datetime.fromtimestamp(date_utc,timezone.utc)
@@ -19,6 +19,7 @@ class SessionItem():
         self.watchTime = watchTime
         self.lastEpisode = lastEpisode
         self.lastSource = lastSource
+        self.duration = duration
 
     @property
     def id(self):
@@ -87,7 +88,7 @@ class SessionManager():
                     )
                 )
 
-    def update(self, anime:Anime, lastEpisode:int, watchTime=0):
+    def update(self, anime:Anime, lastEpisode:int, watchTime=0, duration=0):
         right_sessionItem = next(item for item in self.session_items if item.id == anime.id)
 
         if not right_sessionItem:
@@ -95,6 +96,7 @@ class SessionManager():
 
         right_sessionItem.lastEpisode = lastEpisode
         right_sessionItem.watchTime = watchTime
+        right_sessionItem.duration = duration
 
     def remove(self, id:str):
         right_sessionItem = next(item for item in self.session_items if item.id == id)
@@ -118,7 +120,8 @@ class SessionManager():
                 json_anime['availableEpisodes'],
                 json_anime['lastEpisode'],
                 json_anime['lastSource'],
-                watchTime=json_anime['watchTime']
+                watchTime=json_anime['watchTime'],
+                duration=json_anime['duration'],
             ))
         
         return session_items
@@ -147,7 +150,8 @@ class SessionManager():
                 'availableEpisodes': availableEpisodes,
                 'lastEpisode': session_item.lastEpisode,
                 'lastSource': session_item.lastSource,
-                'watchTime': session_item.watchTime
+                'watchTime': session_item.watchTime,
+                'duration': session_item.duration
             }
 
         if pbar:

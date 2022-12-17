@@ -4,11 +4,10 @@ from goyabucli.playerManager import PlayerManager
 from goyabucli.dropdown import interactiveTable
 from goyabucli.translation import t
 import termtables as tt
-from typing import Dict
+from typing import Dict, Union
 from tqdm import tqdm
 
-
-def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,int], default_root:str, always_yes:bool):
+def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,Union[None,int]], default_root:str, always_yes:bool):
     manager = ScraperManager()
     sessionmanager = SessionManager(scrapers=manager.scrapers, root=default_root)
 
@@ -52,12 +51,19 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
         alignment="c",
     )
 
+
+    session_anime = sessionmanager.find(anime)
+
+    if session_anime:
+        episodes_range['start'] = session_anime.lastEpisode-1
+        episodes_range['end'] = None
+
     if len(anime.availableScrapers) > 1:
         if not always_yes:
             results = interactiveTable(
-                [['',scraperName] for scraperName in anime.availableScrapers],
-                ['',t('Escolha uma fonte')],
-                'll',
+                items=[['',scraperName] for scraperName in anime.availableScrapers],
+                header=['',t('Escolha uma fonte')],
+                alignment='ll',
                 behaviour='single',
                 maxListSize=10,
                 highlightRange=(0,1),
@@ -80,11 +86,14 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
         print(t("Não foi possível acessar os episódios de '{}' usando '{}'", anime.title, anime.source))
         exit()
 
-    if not always_yes:
+    def is_range_valid(episodes_range:Dict[str,Union[None,int]]):
+        return episodes_range['start'] is None or episodes_range['end'] is None or episodes_range['end'] - episodes_range['start'] != 0
+
+    if not always_yes and not is_range_valid(episodes_range):
         results = interactiveTable(
-            episodes_names,
-            ['',t('Episodios')],
-            'll',
+            items=episodes_names,
+            header=['',t('Episodios')],
+            alignment='ll',
             behaviour='multiSelectWithText',
             maxListSize=13,
             highlightRange=(1,1),
@@ -96,9 +105,9 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
 
         if results['text'] not in ['', 'S', 's']:
             results = interactiveTable(
-                episodes_names,
-                ['',t('Episodios')],
-                'll',
+                items=episodes_names,
+                header=['',t('Episodios')],
+                alignment='ll',
                 behaviour='multiSelect',
                 maxListSize=13,
                 highlightRange=(1,1),
@@ -115,13 +124,12 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
             episodes_range['end'] = max(results['items'].keys())
 
             episodes = [episodes[i] for i in results['items']]
-    elif episodes_range['end'] - episodes_range['start'] != 0:
+    elif is_range_valid(episodes_range):
         episodes = episodes[slice(episodes_range['start'], episodes_range['end'])]
 
     for episode in tqdm(episodes, postfix=t("Links carregados"), ascii=True, leave=False, bar_format='|{bar}| {n_fmt}/{total_fmt}{postfix}'):
         episode.retrieveLinks(anime.source)
 
-    session_anime = sessionmanager.find(anime)
 
     player = PlayerManager(anime.title, anime.source, episodes, root=default_root)
 
@@ -130,17 +138,23 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
     print(t('Abrindo "{}"...', playlist_file))
 
     if player.isMpvAvailable() and default_player == 'mpv':
-        if session_anime:
+        start_pos = 0
+        last_watch_pos = 0
+        seek_time = 0
+
+        # restore previous session
+        ep_ids = [ep.index for ep in episodes]
+        if session_anime and session_anime.lastEpisode-1 in ep_ids:
             last_watch_pos = session_anime.lastEpisode
             seek_time = session_anime.watchTime
-        else:
-            last_watch_pos = 0
-            seek_time = 0
-
-        ep_ids = [ep.index for ep in episodes]
-        start_pos = 0
-        if last_watch_pos-1 in ep_ids:
             start_pos = ep_ids.index(last_watch_pos-1)
+
+            # jump to next episode if user stopped at the end of the episode of the previous session
+            time_until_ep_ends = session_anime.duration-seek_time
+            if time_until_ep_ends > 0 and time_until_ep_ends < 90:
+                start_pos += 1
+                seek_time = 0
+
 
         results = player.playWithMPV(playlist_file, seek_time=seek_time, playlistPos=start_pos)
     else:
@@ -149,7 +163,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
 
     sessionmanager.add([anime])
 
-    sessionmanager.update(anime, results['lastEpisode'], results['watchTime'])
+    sessionmanager.update(anime, results['lastEpisode'], results['watchTime'], results['duration'])
 
     print(t('Atualizando o histórico...'))
     sessionmanager.dump(verbose=True, number_to_update=10)

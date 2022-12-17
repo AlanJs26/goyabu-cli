@@ -7,6 +7,7 @@ from goyabucli.dropdown import isWindows
 class PlayerManagerResults(TypedDict):
     lastEpisode:int
     watchTime:int
+    duration:int
 
 class PlayerManager():
     def __init__(self, title:str, scraperName:str, episodes:List[Episode], root='', playlistPos=0):
@@ -57,6 +58,7 @@ class PlayerManager():
             mpv.time_pos = seek_time
 
         mpv.pause = False
+        duration = mpv.duration
 
         working=False
 
@@ -68,6 +70,7 @@ class PlayerManager():
                 if not mpv.media_title or 'Ep ' not in mpv.media_title:
                     continue
                 mpvEpIndex = int(mpv.media_title.split('-')[0].replace('Ep ', ''))
+                duration = mpv.duration
                 working=True
         except:
             pass
@@ -80,12 +83,12 @@ class PlayerManager():
         except:
             print('Saindo do MPV...')
 
-        return {"lastEpisode": mpvEpIndex, "watchTime": int(seek_time or 0)}
+        return {"lastEpisode": mpvEpIndex, "watchTime": int(seek_time or 0), "duration": int(duration or 0)}
 
     def play(self, path:str, player_path:str) -> PlayerManagerResults:
         system(f'{player_path} "{path}"')
 
-        return {"lastEpisode": 1, "watchTime": 0}
+        return {"lastEpisode": 1, "watchTime": 0, "duration": 0}
 
     def generatePlaylistFile(self) -> str:
         fileText = '#EXTM3U\n\n' 
