@@ -71,6 +71,9 @@ class Episode():
             if not source.ready or not source.test():
                 right_scraper.remove(source)
 
+
+
+
     def availableLanguages(self) -> List[str]:
         langs : Set[str] = set()
 

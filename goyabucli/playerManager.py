@@ -92,21 +92,27 @@ class PlayerManager():
         return {"lastEpisode": 1, "watchTime": 0, "duration": 0}
 
     def generatePlaylistFile(self) -> str:
-        fileText = '#EXTM3U\n\n' 
+        fileText = '' 
         resolutionRanking = ['ultra-hd', 'full-hd', 'hd', 'sd']
 
         for episode in self.episodes:
+            if not episode.getLinksBySource(self.scraperName):
+                continue
             fileText+=f'#EXTINF:-1,Ep {episode.id} - {episode.title.replace("#", "")}\n'
+            
             sorted_links = sorted(episode.getLinksBySource(self.scraperName), key=lambda x:resolutionRanking.index(x.quality))
 
             fileText+=f'{sorted_links[0].url}\n'
             # for link in sorted_links:
             #     fileText+=f'{link.url}\n'
 
+        if not fileText:
+            return ''
+
         file_path = path.join(self.playlist_folder, self.title+".m3u")
 
         with open(file_path, 'w') as file:
-            file.writelines(fileText)
+            file.writelines(f'#EXTM3U\n\n{fileText}')
 
 
         return file_path

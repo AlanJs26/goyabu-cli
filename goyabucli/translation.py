@@ -1,4 +1,5 @@
 from locale import getdefaultlocale
+from rich import print as rprint
 
 translation = {
     "Nenhum anime encontrado com o nome '{}'": {
@@ -58,6 +59,12 @@ translation = {
     "Animes atualizados": {
         'en': 'animes updated',
     },
+    "Não foi encontrado nenhum link válido para o episódio {} atualizados": {
+        'en': "Wasn't found any valid links for episode {}",
+    },
+    "Não foi possível gerar o arquivo m3u": {
+        'en': "Wasn't possible generate the m3u file",
+    },
 }
 
 lang = 'en'
@@ -75,3 +82,8 @@ def t(text:str, *args):
         return translation_text.format(*args)
 
     return translation_text
+
+
+def error(string):
+    rprint('[red]'+string)
+

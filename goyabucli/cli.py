@@ -2,7 +2,7 @@ from .scraperManager import ScraperManager
 from .sessionManager import SessionManager
 from .playerManager import PlayerManager
 from .dropdown import interactiveTable
-from .translation import t
+from .translation import t, error
 import termtables as tt
 from typing import Dict, Union, List
 from tqdm import tqdm
@@ -17,7 +17,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
         animes = manager.search(session_item, default_scraper)
 
         if not animes:
-            print(t("Nenhum anime encontrado com o nome '{}'", session_item))
+            error(t("Nenhum anime encontrado com o nome '{}'", session_item))
             exit()
 
         anime_names = [['',anime.title, ','.join(anime.pageUrl.keys())] for anime in animes]
@@ -51,10 +51,17 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
         alignment="c",
     )
 
+    def is_range_valid(episodes_range:Dict[str,Union[None,int]]):
+        return (
+            episodes_range['start'] is None or
+            episodes_range['end'] is None or
+            (episodes_range['end'] != episodes_range['start'])
+        )
+
 
     session_anime = sessionmanager.find(anime)
 
-    if session_anime:
+    if session_anime and not is_range_valid(episodes_range):
         episodes_range['start'] = session_anime.lastEpisode-1
         episodes_range['end'] = None
 
@@ -83,15 +90,8 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
     episodes_names = [['', episode.title] for episode in episodes]
 
     if not episodes:
-        print(t("Não foi possível acessar os episódios de '{}' usando '{}'", anime.title, anime.source))
+        error(t("Não foi possível acessar os episódios de '{}' usando '{}'", anime.title, anime.source))
         exit()
-
-    def is_range_valid(episodes_range:Dict[str,Union[None,int]]):
-        return (
-            episodes_range['start'] is None or
-            episodes_range['end'] is None or
-            (episodes_range['end'] != episodes_range['start'])
-        )
 
     if (not always_yes and not is_range_valid(episodes_range)) or not is_range_valid(episodes_range):
         results = interactiveTable(
@@ -131,13 +131,22 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
     elif is_range_valid(episodes_range):
         episodes = episodes[slice(episodes_range['start'], episodes_range['end'])]
 
+
     for episode in tqdm(episodes, postfix=t("Links carregados"), ascii=True, leave=False, bar_format='|{bar}| {n_fmt}/{total_fmt}{postfix}'):
         episode.retrieveLinks(anime.source)
+
+    for episode in episodes:
+        if not episode.getLinksBySource(anime.source):
+            error(t('Não foi encontrado nenhum link válido para o episódio {}', episode.index+1))
 
 
     player = PlayerManager(anime.title, anime.source, episodes, root=default_root)
 
     playlist_file = player.generatePlaylistFile()
+
+    if not playlist_file:
+        error(t('Não foi possível gerar o arquivo m3u'))
+        exit()
 
     print(t('Abrindo "{}"...', playlist_file))
 
@@ -170,7 +179,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
     sessionmanager.update(anime, results['lastEpisode'], results['watchTime'], results['duration'])
 
     print(t('Atualizando o histórico...'))
-    sessionmanager.dump(verbose=True, number_to_update=10)
+    # sessionmanager.dump(verbose=True, number_to_update=10)
 
 
 

@@ -10,7 +10,6 @@ from lxml.html import fromstring
 class AnimeFire(Scraper):
     def __init__(self):
         super().__init__('animefire', ['pt'])
-        self.scrapers
 
     def parseLink(self, link:VideoUrl) -> List[VideoUrl]:
         def parse_quality(quality:str):

@@ -51,7 +51,7 @@ parser.add_argument('--episodes',    action='store', default={'start':0, 'end':0
                     help='range of episodes to watch. Ex: an range of 1:5 will play all the episodes from one to five')
 parser.add_argument('--player',      action='store', default='mpv', type=str,
                     help='player to run the anime\n         mpv  - use MPV player(default)\n         none - run as server\n         xxxx - use any other player, example: mplayer')
-parser.add_argument('--scraper',      action='store', default=SCRAPERS[0].name, type=preferedScraperParser,
+parser.add_argument('--scraper',      action='store', default=[], type=preferedScraperParser,
                     help='give priority to given scraper when using --yes argument.')
 parser.add_argument('--update',      action='store_true',         
                     help='fetch the latest information for the animes in history')
