@@ -1,5 +1,5 @@
 from goyabucli.scraper import Scraper,Anime,Episode,VideoUrl
-from goyabucli.utils import animeTitle2Id
+from goyabucli.utils import animeTitle2Id, headers
 
 from typing import List
 
@@ -14,8 +14,6 @@ class Goyabu(Scraper):
         self.scrapers
 
     def parseLink(self, link:VideoUrl) -> List[VideoUrl]:
-        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
-
         html=requests.get(link.url, headers=headers).text 
 
         allmatches = re.findall(r"(?<=src=').+kanra\.dev.+?(?=')", html)

@@ -1,11 +1,11 @@
-from goyabucli.scraper import Scraper,Anime,Episode,VideoUrl
-from goyabucli.utils import animeTitle2Id
+from ..scraper import Scraper,Anime,Episode,VideoUrl
+from ..utils import animeTitle2Id, headers
+from ..extractors.blogger import BloggerExtractor
 
 from typing import List
 
 import requests
-from bs4 import BeautifulSoup as bs4
-from lxml import etree
+from lxml.html import fromstring
 
 class AnimeFire(Scraper):
     def __init__(self):
@@ -26,7 +26,6 @@ class AnimeFire(Scraper):
 
             return 'sd'
 
-        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
         video_api_url = link.url.replace('animes', 'video', 1)
 
         html = requests.get(video_api_url, headers=headers)
@@ -36,12 +35,20 @@ class AnimeFire(Scraper):
             link.ready = False
             return []
 
-        link.url = json_result['data'][0]['src']
-        link.quality = parse_quality(json_result['data'][0]['label'])
+
+        if 'token' in json_result and 'blogger' in json_result['token']:
+            foundStreams = [{'src': item, 'label': '360p'} for item in BloggerExtractor.parseUrl(json_result['token'])]
+        else:
+            foundStreams = json_result['data']
+
+
+        link.url = foundStreams[0]['src']
+        link.quality = parse_quality(foundStreams[0]['label'])
+
         link.ready = True
 
         other_links = []
-        for item in json_result['data'][1:]:
+        for item in foundStreams[1:]:
             other_links.append(
                 VideoUrl( item['src'], parse_quality(item['label']), 'pt', self.name, ready=True)
             )
@@ -49,11 +56,9 @@ class AnimeFire(Scraper):
         return other_links
 
     def search(self, query:str) -> List[Anime]:
-        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
         html = requests.get(f'https://animefire.net/pesquisar/{query.replace(" ", "-")}', headers=headers).text
-        soup = bs4(html, 'html.parser')
-        dom = etree.HTML(str(soup)).getroottree()
+        dom = fromstring(html)
 
         imgs = dom.xpath('//*[@id="body-content"]/div[2]/div/div/div/div/article/a/div[1]/h3')
 
@@ -69,11 +74,9 @@ class AnimeFire(Scraper):
         return animes
 
     def episodes(self, animePageUrl) -> List[Episode]:
-        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
         html = requests.get(animePageUrl, headers=headers).text
-        soup = bs4(html, 'html.parser')
-        dom = etree.HTML(str(soup)).getroottree()
+        dom = fromstring(html)
 
         epnames = dom.xpath('//*[@id="body-content"]/div[1]/div/div[2]/section/div[2]/a')
 

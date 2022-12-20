@@ -2,7 +2,6 @@ from functools import wraps
 from multiprocessing import Process
 from os import get_terminal_size
 
-from anilist import Client
 
 #  def parametrized(dec):
     #  def layer(*args, **kwargs):
@@ -25,8 +24,13 @@ from anilist import Client
         #  return result if len(result)>1 else list(result.items())[0][1]
     #  return aux
 
-anilistClient = Client()
+if 'anilistClient' not in globals().keys():
+    from anilist import Client
+    anilistClient = Client()
+
 search_buffer = {}
+
+headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
 def getTotalEpisodesCount(title:str):
     try:

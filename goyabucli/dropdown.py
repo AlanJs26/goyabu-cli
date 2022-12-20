@@ -4,7 +4,7 @@ import termtables as tt
 from math import floor
 from functools import reduce
 from typing import TypedDict,List,Callable,Optional,cast,Union,Dict
-from goyabucli.utils import nameTrunc
+from .utils import nameTrunc
 
 from copy import deepcopy
 

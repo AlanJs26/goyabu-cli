@@ -1,8 +1,9 @@
 from os import path,system,makedirs
 from time import sleep
 from typing import List, TypedDict
-from goyabucli.scraper import Episode
-from goyabucli.dropdown import isWindows
+from .scraper import Episode
+from .dropdown import isWindows
+from .utils import headers
 
 class PlayerManagerResults(TypedDict):
     lastEpisode:int
@@ -32,7 +33,7 @@ class PlayerManager():
         if isWindows:
             mpv = MPV()
         else:
-            mpv = MPV(ipc_socket="/tmp/mpv-socket")
+            mpv = MPV(ipc_socket="/tmp/mpv-socket", user_agent=headers['User-Agent'])
 
         mpvEpIndex = 1 # Current anime playing 
 

@@ -1,12 +1,11 @@
-from goyabucli.scraper import Anime,Scraper
+from .scraper import Anime,Scraper
 from typing import List,Union
-from datetime import timezone
-from datetime import datetime
+from datetime import datetime, timezone
 from os import path, makedirs
 import json
-from goyabucli.utils import getTotalEpisodesCount
-from goyabucli.dropdown import interactiveTable,bcolors
-from goyabucli.translation import t
+from .utils import getTotalEpisodesCount
+from .dropdown import interactiveTable,bcolors
+from .translation import t
 
 
 class SessionItem():

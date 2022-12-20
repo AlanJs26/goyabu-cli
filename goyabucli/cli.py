@@ -1,20 +1,20 @@
-from goyabucli.scraperManager import ScraperManager
-from goyabucli.sessionManager import SessionManager
-from goyabucli.playerManager import PlayerManager
-from goyabucli.dropdown import interactiveTable
-from goyabucli.translation import t
+from .scraperManager import ScraperManager
+from .sessionManager import SessionManager
+from .playerManager import PlayerManager
+from .dropdown import interactiveTable
+from .translation import t
 import termtables as tt
-from typing import Dict, Union
+from typing import Dict, Union, List
 from tqdm import tqdm
 
-def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,Union[None,int]], default_root:str, always_yes:bool):
+def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,Union[None,int]], default_root:str, always_yes:bool, default_scraper:List[str]):
     manager = ScraperManager()
     sessionmanager = SessionManager(scrapers=manager.scrapers, root=default_root)
 
     session_item = sessionmanager.select(query=default_anime_name, maxListSize=10)
 
     if isinstance(session_item,str):
-        animes = manager.search(session_item)
+        animes = manager.search(session_item, default_scraper)
 
         if not animes:
             print(t("Nenhum anime encontrado com o nome '{}'", session_item))
@@ -87,9 +87,13 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
         exit()
 
     def is_range_valid(episodes_range:Dict[str,Union[None,int]]):
-        return episodes_range['start'] is None or episodes_range['end'] is None or episodes_range['end'] - episodes_range['start'] != 0
+        return (
+            episodes_range['start'] is None or
+            episodes_range['end'] is None or
+            (episodes_range['end'] != episodes_range['start'])
+        )
 
-    if not always_yes and not is_range_valid(episodes_range):
+    if (not always_yes and not is_range_valid(episodes_range)) or not is_range_valid(episodes_range):
         results = interactiveTable(
             items=episodes_names,
             header=['',t('Episodios')],
