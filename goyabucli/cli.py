@@ -6,6 +6,7 @@ from .translation import t, error
 import termtables as tt
 from typing import Dict, Union, List
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,Union[None,int]], default_root:str, always_yes:bool, default_scraper:List[str]):
     manager = ScraperManager()
@@ -132,8 +133,11 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
         episodes = episodes[slice(episodes_range['start'], episodes_range['end'])]
 
 
-    for episode in tqdm(episodes, postfix=t("Links carregados"), ascii=True, leave=False, bar_format='|{bar}| {n_fmt}/{total_fmt}{postfix}'):
-        episode.retrieveLinks(anime.source)
+    with tqdm(total=len(episodes), postfix=t("Links carregados"), ascii=True, leave=False, bar_format='|{bar}| {n_fmt}/{total_fmt}{postfix}') as pbar:
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = [executor.submit(episode.retrieveLinks,anime.source) for episode in episodes]
+            for _ in as_completed(futures):
+                pbar.update(1)
 
     for episode in episodes:
         if not episode.getLinksBySource(anime.source):
@@ -179,7 +183,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
     sessionmanager.update(anime, results['lastEpisode'], results['watchTime'], results['duration'])
 
     print(t('Atualizando o histórico...'))
-    # sessionmanager.dump(verbose=True, number_to_update=10)
+    sessionmanager.dump(verbose=True, number_to_update=10)
 
 
 

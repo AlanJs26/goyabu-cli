@@ -57,6 +57,7 @@ To run the program, type `python runner.py` in the program folder or add to your
 | Source                                                | Description                                                        | Language   | Comments           |
 | ----------------------------------------------------- | ------------------------------------------------------------------ | ---------- | ------------------ |
 | [animefire](https://animefire.com/)             | website used to watch anime                                        | Portuguese |                    |
+| [goyabu](https://goyabu.com/)             | website used to watch anime                                        | Portuguese |                    |
 
 ## Language
 
@@ -92,8 +93,9 @@ anime 1 --yes
 
 All available arguments are listed below:
 
-> -  `--episodes` select which episodes to watch. The syntax is `start:end`
+> -  `--episodes` select which episodes to watch. The syntax is `start:end` or `episode`.
 > -  `--player` specify the player do you want to use (default: mpv)
+> -  `--scraper` use specified scraper to fetch the episodes
 > -  `--update` fetch the number of total episodes of the items in history.
 > -  `--yes` accept all default options. it is useful then you already know the full name of the anime/series
 > -  `--config-dir` specify the folder to save the playlist file

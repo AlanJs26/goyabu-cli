@@ -6,6 +6,7 @@ import json
 from .utils import getTotalEpisodesCount
 from .dropdown import interactiveTable,bcolors
 from .translation import t
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class SessionItem():
@@ -128,15 +129,7 @@ class SessionManager():
     def dump(self, verbose=False, number_to_update=0):
         content = {}
 
-        pbar = None
-        if verbose:
-            from tqdm import tqdm
-            pbar = tqdm(total=len(self.session_items), postfix=t('Animes atualizados'), ascii=True, leave=False, bar_format='|{bar}| {n_fmt}/{total_fmt}{postfix}')
-
-        for i,session_item in enumerate(self.session_items):
-            if pbar:
-                pbar.update(1)
-
+        def updateSessionItem(i, session_item):
             availableEpisodes = session_item.availableEpisodes
             if number_to_update and i+1>len(self.session_items)-number_to_update:
                 availableEpisodes = len(session_item.anime.retrieveEpisodes())
@@ -152,6 +145,17 @@ class SessionManager():
                 'watchTime': session_item.watchTime,
                 'duration': session_item.duration
             }
+
+        pbar = None
+        if verbose:
+            from tqdm import tqdm
+            pbar = tqdm(total=len(self.session_items), postfix=t('Animes atualizados'), ascii=True, leave=False, bar_format='|{bar}| {n_fmt}/{total_fmt}{postfix}')
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = [executor.submit(updateSessionItem,i, session_item) for i,session_item in enumerate(self.session_items)]
+            for _ in as_completed(futures):
+                if pbar:
+                    pbar.update(1)
 
         if pbar:
             pbar.close()
