@@ -3,10 +3,10 @@ from .sessionManager import SessionManager
 from .playerManager import PlayerManager
 from .dropdown import interactiveTable
 from .translation import t, error
-import termtables as tt
-from typing import Dict, Union, List
-from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Dict, Union, List
+import termtables as tt
+from tqdm import tqdm
 
 def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,Union[None,int]], default_root:str, always_yes:bool, default_scraper:List[str]):
     manager = ScraperManager()
