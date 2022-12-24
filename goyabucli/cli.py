@@ -3,10 +3,10 @@ from .sessionManager import SessionManager
 from .playerManager import PlayerManager
 from .dropdown import interactiveTable
 from .translation import t, error
+from .progress import progress
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, Union, List
 import termtables as tt
-from tqdm import tqdm
 
 def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,Union[None,int]], default_root:str, always_yes:bool, default_scraper:List[str]):
     manager = ScraperManager()
@@ -133,7 +133,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
         episodes = episodes[slice(episodes_range['start'], episodes_range['end'])]
 
 
-    with tqdm(total=len(episodes), postfix=t("Links carregados"), ascii=True, leave=False, bar_format='|{bar}| {n_fmt}/{total_fmt}{postfix}') as pbar:
+    with progress(total=len(episodes), postfix=t("Links carregados"), leave=False) as pbar:
         with ThreadPoolExecutor(max_workers=4) as executor:
             futures = [executor.submit(episode.retrieveLinks,anime.source) for episode in episodes]
             for _ in as_completed(futures):

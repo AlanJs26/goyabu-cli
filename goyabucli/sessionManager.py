@@ -6,6 +6,7 @@ import json
 from .utils import getTotalEpisodesCount
 from .dropdown import interactiveTable,bcolors
 from .translation import t
+from .progress import ProgressBar
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -148,8 +149,7 @@ class SessionManager():
 
         pbar = None
         if verbose:
-            from tqdm import tqdm
-            pbar = tqdm(total=len(self.session_items), postfix=t('Animes atualizados'), ascii=True, leave=False, bar_format='|{bar}| {n_fmt}/{total_fmt}{postfix}')
+            pbar = ProgressBar(total=len(self.session_items), postfix=t('Animes atualizados'), leave=False)
 
         with ThreadPoolExecutor(max_workers=4) as executor:
             futures = [executor.submit(updateSessionItem,i, session_item) for i,session_item in enumerate(self.session_items)]
