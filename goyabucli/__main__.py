@@ -1,8 +1,10 @@
 from argparse import RawTextHelpFormatter, ArgumentParser
 from os import path,makedirs
+
+import json
 from .sessionManager import SessionManager
 from .scraperManager import SCRAPERS
-from .cli import mainTUI
+from .cli import mainTUI, configTUI, Config
 from .translation import t
 
 def preferedScraperParser(string:str):
@@ -57,6 +59,8 @@ parser.add_argument('--update',      action='store_true',
                     help='fetch the latest information for the animes in history')
 parser.add_argument('--server',      action='store_true',         
                     help='serves a list of animes as a m3u playlist through the network. Use colons (,) to split each anime')
+parser.add_argument('--config',      action='store_true',         
+                    help='change config using the cli')
 parser.add_argument('--config-dir',    action='store', default='~/.goyabucli',    type=dir_path, metavar='config directory',
                     help='directory for the watch list')
 
@@ -64,10 +68,28 @@ args = parser.parse_args()
 
 # TODO -> implement on demand server TUI
 # TODO -> implement scraper filter to anime selection
-# TODO -> implement configuration TUI
-#   TODO -> config file
+# DONE -> implement configuration TUI
+#   DONE -> config file
+# TODO -> anilist integration
 
 def main():
+
+    config = Config(config_dir=args.config_dir, player=args.player, anilist_username='', anilist_password='')
+
+    if path.isfile(path.join(args.config_dir, 'config.json')):
+        with open(path.join(args.config_dir, 'config.json')) as file:
+            content = json.load(file)
+
+            if 'anilist_username' in content and 'anilist_password' in content:
+                config.anilist_username = content['anilist_username']
+                config.anilist_password = content['anilist_password']
+            if 'config_dir' in content and args.config_dir == parser.get_default('config_dir'):
+                config.config_dir = content['config_dir']
+            if 'player' in content and args.player == parser.get_default('player'):
+                config.player = content['player']
+                
+
+
     if args.update:
         print(t('Atualizando o histórico...'))
         sessionmanager = SessionManager(root=args.config_dir, scrapers=SCRAPERS)
@@ -75,8 +97,10 @@ def main():
         sessionmanager.dump(verbose=True, number_to_update=history_size)
 
         print('O total de episódios dos animes do histórico foram sincronizados')
+    elif args.config:
+        configTUI(config)
     else:
-        mainTUI(' '.join(args.name), args.player, args.episodes, path.expanduser(args.config_dir), args.yes, args.scraper)
+        mainTUI(' '.join(args.name), args.episodes, args.yes, args.scraper, config=config)
 
 if __name__ == "__main__":
     main()

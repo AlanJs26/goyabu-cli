@@ -4,13 +4,24 @@ from .playerManager import PlayerManager
 from .dropdown import interactiveTable
 from .translation import t, error
 from .progress import progress
+import termtables as tt
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, Union, List
-import termtables as tt
+from dataclasses import asdict,dataclass
+from sys import stdout
+from os import path
+import json
 
-def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,Union[None,int]], default_root:str, always_yes:bool, default_scraper:List[str]):
+@dataclass
+class Config:
+    anilist_username:str
+    anilist_password:str
+    config_dir:str
+    player:str
+
+def mainTUI(default_anime_name:str, episodes_range:Dict[str,Union[None,int]], always_yes:bool, default_scraper:List[str], config=Config('','','','')):
     manager = ScraperManager()
-    sessionmanager = SessionManager(scrapers=manager.scrapers, root=default_root)
+    sessionmanager = SessionManager(scrapers=manager.scrapers, root=config.config_dir)
 
     session_item = sessionmanager.select(query=default_anime_name, maxListSize=10)
 
@@ -34,11 +45,11 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
                 flexColumn=1
             )
 
-            if results['selectedPos'] is None:
+            if results.selectedPos is None:
                 print(results)
                 exit()
 
-            anime = animes[results['selectedPos']]
+            anime = animes[results.selectedPos]
         else:
             anime = animes[0]
     else:
@@ -79,10 +90,10 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
                 flexColumn=1
             )
 
-            if results['selectedItem'] is None:
+            if results.selectedItem is None:
                 raise Exception(t('Não foi possível selecionar uma fonte'))
 
-            anime.source = results['selectedItem'][1]
+            anime.source = results.selectedItem[1]
         else:
             anime.source = anime.availableScrapers[0]
 
@@ -108,7 +119,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
         )
 
 
-        if results['text'] not in ['', 'S', 's']:
+        if results.text not in ['', 'S', 's']:
             results = interactiveTable(
                 items=episodes_names,
                 header=['',t('Episodios')],
@@ -120,15 +131,15 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
                 flexColumn=1
             )
 
-            if results['items'] is None:
+            if results.items is None:
                 print(t("É possível selecionar os episódios usando 'c' ou a barra de espaço"))
                 exit()
 
-        if results['items']:
-            episodes_range['start'] = min(results['items'].keys())
-            episodes_range['end'] = max(results['items'].keys())
+        if results.items:
+            episodes_range['start'] = min(results.items.keys())
+            episodes_range['end'] = max(results.items.keys())
 
-            episodes = [episodes[i] for i in results['items']]
+            episodes = [episodes[i] for i in results.items]
     elif is_range_valid(episodes_range):
         episodes = episodes[slice(episodes_range['start'], episodes_range['end'])]
 
@@ -144,7 +155,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
             error(t('Não foi encontrado nenhum link válido para o episódio {}', episode.index+1))
 
 
-    player = PlayerManager(anime.title, anime.source, episodes, root=default_root)
+    player = PlayerManager(anime.title, anime.source, episodes, root=config.config_dir)
 
     playlist_file = player.generatePlaylistFile()
 
@@ -154,7 +165,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
 
     print(t('Abrindo "{}"...', playlist_file))
 
-    if player.isMpvAvailable() and default_player == 'mpv':
+    if player.isMpvAvailable() and config.player == 'mpv':
         start_pos = 0
         last_watch_pos = 0
         seek_time = 0
@@ -175,7 +186,7 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
 
         results = player.playWithMPV(playlist_file, seek_time=seek_time, playlistPos=start_pos)
     else:
-        results = player.play(playlist_file, default_player)
+        results = player.play(playlist_file, config.player)
 
 
     sessionmanager.add([anime])
@@ -184,6 +195,32 @@ def mainTUI(default_anime_name:str, default_player:str, episodes_range:Dict[str,
 
     print(t('Atualizando o histórico...'))
     sessionmanager.dump(verbose=True, number_to_update=10)
+
+
+
+def configTUI(config: Config):
+    print("Use 'q' para sair\n")
+    
+    while True:
+        rows = [ [key, value] for key,value in  asdict(config).items() ]
+
+        results = interactiveTable(
+            rows,
+            ['Field', 'Value'],
+            "cc",
+            highlightRange=(0,2)
+        )
+
+        if not results.selectedItem:
+            break
+
+        new_value = str(input(f"Novo valor para '{results.selectedItem[0]}': "))
+        stdout.write('\033[A\r\033[K')
+
+        setattr(config, results.selectedItem[0], new_value)
+
+        with open(path.join(config.config_dir, 'config.json'), 'w') as file:
+            json.dump(asdict(config), file, indent=2)
 
 
 

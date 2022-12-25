@@ -3,8 +3,9 @@ import re
 import termtables as tt
 from math import floor
 from functools import reduce
-from typing import TypedDict,List,Callable,Optional,cast,Union,Dict
-from .utils import nameTrunc
+from typing import List,Callable,Optional,cast,Union,Dict
+from dataclasses import dataclass
+from goyabucli.utils import nameTrunc
 
 from copy import deepcopy
 
@@ -80,13 +81,14 @@ def endRawmode():
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, filedescriptors)
     filedescriptors=None
 
-class THighlight(TypedDict):
+@dataclass
+class Highlight:
     pos: int
     color: str
 
 
 class HighlightedTable:
-    def __init__(self, items:list, header:list, highlights:List[THighlight], alignment="rc", highlightRange=(1,1), maxListSize=5, flexColumn=0, width=0):
+    def __init__(self, items:list, header:list, highlights:List[Highlight], alignment="rc", highlightRange=(1,1), maxListSize=5, flexColumn=0, width=0):
         newItems = deepcopy(items)
         if width>0:
             if flexColumn < 0 or flexColumn >= len(header):
@@ -109,7 +111,7 @@ class HighlightedTable:
         self.highlightRange = highlightRange
         self.maxListSize = maxListSize
 
-    def update(self, highlights:List[THighlight]=[], upOffset=0, scrollAmount=0):
+    def update(self, highlights:List[Highlight]=[], upOffset=0, scrollAmount=0):
         if(not highlights): highlights=self.highlights
 
         if self.maxListSize > len(self.tableLines):
@@ -135,9 +137,9 @@ class HighlightedTable:
             highlightColor = ''
 
             for highlight in highlights:
-                if highlight['pos'] == i:
-                    highlightPos = highlight['pos']
-                    highlightColor += ''.join(bcolors[color] for color in highlight['color'].split(','))
+                if highlight.pos == i:
+                    highlightPos = highlight.pos
+                    highlightColor += ''.join(bcolors[color] for color in highlight.color.split(','))
 
             if i == highlightPos:
                 #  line = re.sub(r"(│.+?│\s+)(.+?)(\s+│.+?│)", r"\1{}\2{}\3".format(highlightColor, bcolors['end']), line)
@@ -169,35 +171,36 @@ class HighlightedTable:
     def clear(self):
         sys.stdout.write(f"\033[J")
 
-class TKeyCallbackReturn(TypedDict):
-    highlights: List[THighlight]
+@dataclass
+class KeyCallbackReturn:
+    highlights: List[Highlight]
     pos: int
     placeholder: str
     text: str
     ignoredKeys: List[str]
 
-TKeyCallback = Callable[[str, HighlightedTable, List[THighlight], int, list, str], TKeyCallbackReturn]
+KeyCallback = Callable[[str, HighlightedTable, List[Highlight], int, list, str], KeyCallbackReturn]
 
-def _multiselectionTable(key: str, table:HighlightedTable, highlightList: List[THighlight], highlightPos: int, ignoredKeys=[], inputText="") -> TKeyCallbackReturn:
-    currentHightlight = highlightList[0]
+def _multiselectionTable(key: str, table:HighlightedTable, highlightList: List[Highlight], highlightPos: int, ignoredKeys=[], inputText="") -> KeyCallbackReturn:
+    currentHighlight = highlightList[0]
 
     if highlightPos < 1: 
         highlightPos = 0
-        currentHightlight['pos'] = 0
+        currentHighlight.pos = 0
 
     if highlightPos >= len(table.tableLines) or ignoredKeys:
         highlightPos = len(table.tableLines)
-        currentHightlight['pos'] = len(table.tableLines)
+        currentHighlight.pos = len(table.tableLines)
         if ignoredKeys:
             if ord(key) == 9:
                 highlightPos = len(table.tableLines) -1
-                currentHightlight['pos'] = len(table.tableLines) -1
+                currentHighlight.pos = len(table.tableLines) -1
                 ignoredKeys=[]
             elif (key == '[' if isWindows else ord(key) == 27):
                 key=readchr(1) if isWindows else readchr(2) 
                 if key == '[A' or key == 'A':
                     highlightPos = len(table.tableLines) -1
-                    currentHightlight['pos'] = len(table.tableLines) -1
+                    currentHighlight.pos = len(table.tableLines) -1
                     ignoredKeys=[]
                 key = key[0]
             elif ord(key) == 127 or key == '\b':
@@ -209,60 +212,56 @@ def _multiselectionTable(key: str, table:HighlightedTable, highlightList: List[T
 
     newHighlighList = []
     if highlightPos < len(table.tableLines) and (key == "c" or ord(key) == 32 or key == ' '):
-        newHighlighList = [item for item in highlightList[1:] if item['pos'] != currentHightlight['pos']]
+        newHighlighList = [item for item in highlightList[1:] if item.pos != currentHighlight.pos]
 
-        newHighlighList = [currentHightlight, *newHighlighList]
+        newHighlighList = [currentHighlight, *newHighlighList]
 
         wasNotFound = len(newHighlighList) == len(highlightList)
         if wasNotFound == True:
-            newHighlighList.append({
-                'pos': currentHightlight['pos'],
-                'color': 'fail'
-            })
+            newHighlighList.append(Highlight(pos=currentHighlight.pos, color='fail'))
     else:
         newHighlighList = highlightList
 
-    return {
-        'highlights': newHighlighList,
-        'pos': highlightPos,
-        'text': inputText,
-        'placeholder': inputText if ignoredKeys else '',
-        'ignoredKeys': ignoredKeys
-    }
+    return KeyCallbackReturn(
+        highlights=newHighlighList,
+        pos=highlightPos,
+        text=inputText,
+        placeholder=inputText,
+        ignoredKeys=ignoredKeys
+    )
 
-multiselectionTable:TKeyCallback = cast(TKeyCallback,_multiselectionTable)
+multiselectionTable:KeyCallback = cast(KeyCallback,_multiselectionTable)
 
-class TableResults(TypedDict):
+@dataclass
+class TableResults:
     selectedPos: Union[int,None]
     selectedItem: Union[list,None]
     text: str
     items: Union[Dict[int, list],None]
 
+
 def interactiveTable(
-    items:List[list], header:list, alignment="rc", keyCallback:Optional[TKeyCallback]=None,
+    items:List[list], header:list, alignment="rc", keyCallback:Optional[KeyCallback]=None,
         clipPos=True, behaviour="single", hintText='Digite: ',
-        maxListSize=5, staticHighlights:List[THighlight]=[], highlightRange=(1,1),
+        maxListSize=5, staticHighlights:List[Highlight]=[], highlightRange=(1,1),
         width=0, flexColumn=0) -> TableResults:
 
     if len(header) <= 1:
         raise Exception('the number of columns must be greater than 1')
     if not items:
-        return {
-            'selectedPos': None,
-            'selectedItem': None,
-            'text': '',
-            'items': None
-        }
+        return TableResults(
+            selectedPos=None,
+            selectedItem=None,
+            text='',
+            items=None
+        )
 
     highlightPos = 0
     ignoredKeys = []
     inputText = ''
 
-    def selectedStyle(pos:int) -> THighlight:
-        return {
-            'pos': pos,
-            'color': 'underline'
-        }
+    def selectedStyle(pos:int) -> Highlight:
+        return Highlight(pos=pos, color='underline')
 
     if 'multiSelect' in behaviour:
         keyCallback = multiselectionTable
@@ -272,7 +271,7 @@ def interactiveTable(
         clipPos=False # allow reach text position
         highlightPos = len(items) # last position (text input position)
 
-    highlights : List[THighlight] = [selectedStyle(highlightPos)]
+    highlights : List[Highlight] = [selectedStyle(highlightPos)]
 
     table = HighlightedTable(items, header, highlights, alignment, highlightRange=highlightRange, maxListSize=maxListSize, width=width,flexColumn=flexColumn)
     table.update([*staticHighlights,*highlights], scrollAmount=highlightPos)
@@ -323,11 +322,11 @@ def interactiveTable(
 
         if keyCallback is not None and isinstance(key,str):
             results = keyCallback(key, table, highlights, highlightPos, ignoredKeys, inputText)
-            highlights = results['highlights']
-            highlightPos = results['pos']
-            inputText = results['placeholder']
-            ignoredKeys = results['ignoredKeys']
-            inputText = results['text']
+            highlights = results.highlights
+            highlightPos = results.pos
+            inputText = results.placeholder
+            ignoredKeys = results.ignoredKeys
+            inputText = results.text
             # highlights, highlightPos, placeholder, ignoredKeys = keyCallback(key, table, highlights, highlightPos, ignoredKeys, placeholder)
 
         table.update(
@@ -352,13 +351,13 @@ def interactiveTable(
     # termios.tcsetattr(sys.stdin, termios.TCSADRAIN, filedescriptors)
     endRawmode()
 
-    selectedItems = {item['pos']: items[item['pos']] for item in highlights if item['color'] == 'fail'}
-    return {
-        'selectedPos': highlightPos if highlightPos < len(items) else None,
-        'selectedItem': items[highlightPos] if highlightPos<len(items) else None,
-        'items': selectedItems if selectedItems else None,
-        'text': inputText
-    }
+    selectedItems = {item.pos: items[item.pos] for item in highlights if item.color == 'fail'}
+    return TableResults(
+        selectedPos  = highlightPos if highlightPos < len(items) else None,
+        selectedItem = items[highlightPos] if highlightPos<len(items) else None,
+        items        = selectedItems if selectedItems else None,
+        text         = inputText
+    )
 
 if __name__ == "__main__":
     tablelist = [
@@ -378,7 +377,7 @@ if __name__ == "__main__":
     ]
 
     print("before")
-    staticHighlights:List[THighlight]=[{'pos': 3, 'color': 'green'}]
+    staticHighlights:List[Highlight]=[Highlight(pos=3, color='green')]
 
     # while True:
     #     key = readchr(1)
@@ -397,6 +396,8 @@ if __name__ == "__main__":
         highlightRange=(2,2)
     )
     print(results)
+
+    print(results.text)
 
     # posToRemove = [item[0] for item in results[1][1:]]
     # tablelist = [item for i, item in enumerate(tablelist) if i not in posToRemove]

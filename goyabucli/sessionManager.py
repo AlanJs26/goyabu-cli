@@ -198,15 +198,16 @@ class SessionManager():
             hintText=hintText
         )
 
-        if results['text']:
-            if results['text'].isdigit():
+        
+        if results.text:
+            if results.text.isdigit():
                 return self.session_items[len(self.session_items)-int(results['text'])]
-            return results['text']
+            return results.text
 
-        if results['selectedPos'] is None:
+        if results.selectedPos is None:
             raise Exception('Invalid position')
 
-        return self.session_items[results['selectedPos']]
+        return self.session_items[results.selectedPos]
 
 
 
