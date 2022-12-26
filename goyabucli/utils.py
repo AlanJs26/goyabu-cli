@@ -3,6 +3,7 @@ from multiprocessing import Process
 from os import get_terminal_size
 
 
+
 #  def parametrized(dec):
     #  def layer(*args, **kwargs):
         #  def repl(f):
@@ -24,27 +25,9 @@ from os import get_terminal_size
         #  return result if len(result)>1 else list(result.items())[0][1]
     #  return aux
 
-if 'anilistClient' not in globals().keys():
-    from anilist import Client
-    anilistClient = Client()
-
 search_buffer = {}
 
 headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
-
-def getTotalEpisodesCount(title:str):
-    try:
-        result = anilistClient.search_anime(title,1)
-
-        if not result:
-            return 0
-        
-        searchResult = result[0]
-        foundAnime = anilistClient.get_anime(searchResult.id)
-
-        return foundAnime.episodes
-    except:
-        return 0
 
 def animeTitle2Id(title:str):
     return title

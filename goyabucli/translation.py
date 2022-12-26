@@ -1,5 +1,6 @@
 from locale import getdefaultlocale
 from rich import print as rprint
+from sys import stdout
 
 translation = {
     "Nenhum anime encontrado com o nome '{}'": {
@@ -84,6 +85,11 @@ def t(text:str, *args):
     return translation_text
 
 
-def error(string):
+def error(string, clearline=False):
+    if clearline:
+        stdout.write('\r\033[K')
     rprint('[red]'+string)
+
+def warning(string):
+    rprint('[orange]'+string)
 

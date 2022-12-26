@@ -1,17 +1,17 @@
 from .scraper import Anime,Scraper
-from typing import List,Union
+from typing import List,Union,Optional
 from datetime import datetime, timezone
 from os import path, makedirs
 import json
-from .utils import getTotalEpisodesCount
 from .dropdown import interactiveTable,bcolors
 from .translation import t
 from .progress import ProgressBar
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
+
 class SessionItem():
-    def __init__(self, anime:Anime, date_utc:int, episodesInTotal:int, availableEpisodes:int, lastEpisode:int, lastSource:str, watchTime=0, duration=0):
+    def __init__(self, anime:Anime, episodesInTotal:int, availableEpisodes:int, lastEpisode:int, lastSource:str, watchTime=0, duration=0, anilist_id:Optional[int]=None, date_utc=int(datetime.now().timestamp())):
         self.anime = anime
 
         self.date_utc = datetime.fromtimestamp(date_utc,timezone.utc)
@@ -21,6 +21,7 @@ class SessionItem():
         self.lastEpisode = lastEpisode
         self.lastSource = lastSource
         self.duration = duration
+        self.anilist_id = anilist_id
 
     @property
     def id(self):
@@ -57,7 +58,7 @@ class SessionManager():
             with open(path.join(root,self.filename), 'w') as file:
                 json.dump({}, file)
 
-        self.session_items = []
+        self.session_items:List[SessionItem] = []
         self.session_items = self.load()
 
     def find(self, anime:Anime) -> Union[SessionItem,None]:
@@ -81,13 +82,35 @@ class SessionManager():
                 self.session_items.append(
                     SessionItem(
                         anime,
-                        int(datetime.now().timestamp()),
                         0,
                         len(anime.episodes),
                         0,
                         anime.source
                     )
                 )
+
+    def add_session_items(self, session_items:List[SessionItem]):
+        all_ids = [item.id for item in self.session_items]
+        for session_item in session_items:
+            if session_item.id in all_ids: 
+                right_sessionItem = self.session_items[all_ids.index(session_item.id)]
+                right_sessionItem.lastSource = session_item.lastSource
+                right_sessionItem.availableEpisodes = session_item.availableEpisodes
+                right_sessionItem.anime = session_item.anime
+
+                # Move session item to the end of the list
+                self.session_items.remove(right_sessionItem)
+                self.session_items.append(right_sessionItem)
+            else:
+                self.session_items.append(
+                    session_item
+                )
+
+    def has_anime(self, anime:Anime) -> bool:
+        for session_item in self.session_items:
+            if session_item.id == anime.id:
+                return True
+        return False
 
     def update(self, anime:Anime, lastEpisode:int, watchTime=0, duration=0):
         right_sessionItem = next(item for item in self.session_items if item.id == anime.id)
@@ -116,13 +139,14 @@ class SessionManager():
 
             session_items.append(SessionItem(
                 anime,
-                json_anime['utc'],
                 json_anime['episodesInTotal'],
                 json_anime['availableEpisodes'],
                 json_anime['lastEpisode'],
                 json_anime['lastSource'],
+                date_utc=json_anime['utc'],
                 watchTime=json_anime['watchTime'],
                 duration=json_anime['duration'],
+                anilist_id=json_anime['anilist_id']
             ))
         
         return session_items
@@ -139,11 +163,12 @@ class SessionManager():
                 'title': session_item.title,
                 'pageUrl': session_item.anime.pageUrl,
                 'utc': int(session_item.date_utc.timestamp()),
-                'episodesInTotal': getTotalEpisodesCount(session_item.title) or availableEpisodes,
+                'episodesInTotal': session_item.episodesInTotal,
                 'availableEpisodes': availableEpisodes,
                 'lastEpisode': session_item.lastEpisode,
                 'lastSource': session_item.lastSource,
                 'watchTime': session_item.watchTime,
+                'anilist_id': session_item.anilist_id,
                 'duration': session_item.duration
             }
 
@@ -201,7 +226,7 @@ class SessionManager():
         
         if results.text:
             if results.text.isdigit():
-                return self.session_items[len(self.session_items)-int(results['text'])]
+                return self.session_items[len(self.session_items)-int(results.text)]
             return results.text
 
         if results.selectedPos is None:
