@@ -1,0 +1,51 @@
+<html>
+    <head>
+        <title>OAuth Complete</title>
+
+        <style>
+            body {
+                background: #444f60;
+                display: flex;
+                justify-content: center;
+                color: white;
+                font-family: sans-serif;
+            }
+
+            div {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                width: 50vw;
+                overflow-wrap:anywhere;
+                background:rgb(31,38,49);
+                padding:30px;
+            }
+
+            p {
+                width: 100%
+            }
+        </style>
+    </head>
+
+
+    <body>
+        <div>
+            <h1>Login feito com sucesso!</h1>
+            </br>
+            <h3>Token:</h3>
+            <p id="token"></p>
+        </div>
+
+        <script defer>
+            const token = window.location.href.split("?")[1].split('=')[1]
+
+            document.getElementById("token").innerText = token
+        </script>
+    </body>
+</html>
+
+
+
+
+

@@ -3,7 +3,7 @@ from os import path,makedirs
 
 import json
 
-from .anilistManager import AnilistManager, MissingToken
+from .anilistManager import AnilistManager, MissingToken, MissingUsername
 from .sessionManager import SessionManager
 from .scraperManager import SCRAPERS
 from .cli import mainTUI, configTUI, Config
@@ -74,7 +74,7 @@ args = parser.parse_args()
 # TODO -> implement scraper filter to anime selection
 # DONE -> implement configuration TUI
 #   DONE -> config file
-# TODO -> anilist integration
+# DONE -> anilist integration
 
 def main():
 
@@ -84,8 +84,9 @@ def main():
         with open(path.join(args.config_dir, 'config.json')) as file:
             content = json.load(file)
 
-            if 'anilist_username' in content and 'token' in content:
+            if 'anilist_username' in content:
                 config.anilist_username = content['anilist_username']
+            if 'token' in content:
                 config.token = content['token']
             if 'config_dir' in content and args.config_dir == parser.get_default('config_dir'):
                 config.config_dir = content['config_dir']
@@ -94,7 +95,7 @@ def main():
             if 'silent' in content:
                 config.silent = content['silent']
                 
-    anilistManager = AnilistManager(config.anilist_username, config.token, scrapers=SCRAPERS)
+    anilistManager = AnilistManager(config.anilist_username, config.token, scrapers=SCRAPERS, silent=config.silent)
 
     if args.update:
         print(t('Atualizando o histórico...'))
@@ -126,6 +127,12 @@ def main():
         except MissingToken:
             if not config.silent:
                 warning("wasn't possible sync with anilist. Missing authentification token")
+                warning("to get rid of this message, mark the option 'silent' to True in the config")
+                warning("    eg: anime --config")
+                exit()
+        except MissingUsername:
+            if not config.silent:
+                warning("wasn't possible sync with anilist. Missing username")
                 warning("to get rid of this message, mark the option 'silent' to True in the config")
                 warning("    eg: anime --config")
                 exit()

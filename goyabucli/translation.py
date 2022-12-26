@@ -91,5 +91,5 @@ def error(string, clearline=False):
     rprint('[red]'+string)
 
 def warning(string):
-    rprint('[orange]'+string)
+    rprint('[yellow]'+string)
 

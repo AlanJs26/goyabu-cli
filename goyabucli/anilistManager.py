@@ -14,21 +14,55 @@ class MissingToken(Exception):
     "Raised when AnilistManager doesn't have a token"
     pass
 
+class MissingUsername(Exception):
+    "Raised when AnilistManager doesn't have the username"
+    pass
+
 class AnimeNotFound(Exception):
     "Raised when AnilistManager can't find the requested anime in anilist"
     pass
 
 class AnilistManager():
-    def __init__(self, username:str, token='', scrapers:List[Scraper]=[]):
+    def __init__(self, username:str, token='', scrapers:List[Scraper]=[], silent=False):
         self.username = username
         self.token = token
+        self.silent = silent
         self.scrapers = scrapers
 
         self._client_id = '10523'
 
-    def _ensure_token(self):
-        if not self.token:
-            raise Exception("Missing anilist token")
+    def search(self, name:str) -> SessionItem:
+        variables = {
+            'name': name
+        }
+        query = '''
+        query ($name: String) {
+            Media(search: $name, type: ANIME) {
+                id
+                title {
+                  romaji
+                }
+                episodes
+                nextAiringEpisode {
+                    episode
+                }
+            }  
+        }
+        '''
+        result = self._request(query, variables)
+        if 'errors' in result:
+            raise AnimeNotFound()
+
+        media = result['data']['Media']
+
+        return SessionItem(
+            Anime(media['title']['romaji'], media['title']['romaji']),
+            media['episodes'],
+            media['nextAiringEpisode']['episode'] if media['nextAiringEpisode'] else media['episodes'],
+            1,
+            '',
+            anilist_id=media['id']
+        )
 
     def search_by_id(self, id:int) -> SessionItem:
         variables = {
@@ -93,42 +127,6 @@ class AnilistManager():
         if pbar:
             pbar.close()
 
-
-    def search(self, name:str) -> SessionItem:
-        variables = {
-            'name': name
-        }
-        query = '''
-        query ($name: String) {
-            Media(search: $name, type: ANIME) {
-                id
-                title {
-                  romaji
-                }
-                episodes
-                nextAiringEpisode {
-                    episode
-                }
-            }  
-        }
-        '''
-        result = self._request(query, variables)
-        if 'errors' in result:
-            raise AnimeNotFound()
-
-        media = result['data']['Media']
-
-        return SessionItem(
-            Anime(media['title']['romaji'], media['title']['romaji']),
-            media['episodes'],
-            media['nextAiringEpisode']['episode'] if media['nextAiringEpisode'] else media['episodes'],
-            1,
-            '',
-            anilist_id=media['id']
-        )
-
-        
-
     def get_watching(self) -> List[SessionItem]:
         variables = {
             'userName': self.username
@@ -181,29 +179,34 @@ class AnilistManager():
             mutation ($mediaId: Int, $progress: Int) {
               SaveMediaListEntry (mediaId: $mediaId, progress: $progress) {
                   progress
+                  status
               }
             }
         '''
 
-        with progress(total=len(session_list), postfix='Sincronizando', leave=False) as pbar:
-            for session_item in session_list:
-                id = session_item.anilist_id
+        try:
+            with progress(total=len(session_list), postfix='Sincronizando', leave=False) as pbar:
+                for session_item in session_list:
+                    id = session_item.anilist_id
 
-                try:
-                    if not id:
-                        id = self.search(session_item.title).anilist_id
-                except AnimeNotFound:
-                    error(f"Não foi possível sincronizar '{session_item.title}'", clearline=True)
-                    continue
+                    try:
+                        if not id:
+                            id = self.search(session_item.title).anilist_id
+                    except AnimeNotFound:
+                        if not self.silent:
+                            error(f"Não foi possível sincronizar '{session_item.title}'", clearline=True)
+                        continue
 
-                variables = {
-                    'mediaId': id,
-                    'progress': session_item.lastEpisode,
-                    'status': 'COMPLETED' if session_item.status == 'complete' else 'CURRENT'
-                }
+                    variables = {
+                        'mediaId': id,
+                        'progress': session_item.lastEpisode,
+                        'status': 'COMPLETED' if session_item.status == 'complete' else 'CURRENT'
+                    }
 
-                self._request_mutate(query, variables)
-                pbar.update(1)
+                    self._request_mutate(query, variables)
+                    pbar.update(1)
+        except KeyboardInterrupt:
+            pass
 
     def merge_session(self, session:SessionManager, preferRemote=False):
         watch_list = self.get_watching()
@@ -224,6 +227,8 @@ class AnilistManager():
         session.add_session_items(new_items)
 
     def _request(self, query, variables):
+        if not self.username:
+            raise MissingUsername("Missing anilist username")
         res = requests.post(
             'https://graphql.anilist.co',
             json = {
@@ -234,7 +239,8 @@ class AnilistManager():
         return res.json()
 
     def _request_mutate(self, query, variables):
-        self._ensure_token()
+        if not self.token:
+            raise MissingToken("Missing anilist token")
         res = requests.post(
             'https://graphql.anilist.co',
             headers={
