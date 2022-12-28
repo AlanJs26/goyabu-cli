@@ -182,8 +182,7 @@ def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_rang
             start_pos = ep_ids.index(last_watch_pos-1)
 
             # jump to next episode if user stopped at the end of the episode of the previous session
-            time_until_ep_ends = session_anime.duration-seek_time
-            if time_until_ep_ends > 0 and time_until_ep_ends < 90:
+            if session_anime.status == 'insync':
                 start_pos += 1
                 seek_time = 0
 

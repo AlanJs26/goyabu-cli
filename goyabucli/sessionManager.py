@@ -33,12 +33,12 @@ class SessionItem():
 
     @property
     def status(self):
-        if self.lastEpisode == self.availableEpisodes and self.lastEpisode < self.episodesInTotal:
-            return 'insync'
-        elif self.lastEpisode < self.episodesInTotal:
-            return 'ongoing'
-        else:
+        if self.lastEpisode >= self.episodesInTotal and self.watchTime > self.duration*0.92:
             return 'complete'
+        if self.lastEpisode == self.availableEpisodes and self.watchTime >= self.duration*0.9:
+            return 'insync'
+        else:
+            return 'ongoing'
 
 
 class SessionManager():
@@ -154,7 +154,7 @@ class SessionManager():
     def dump(self, verbose=False, number_to_update=0):
         content = {}
 
-        def updateSessionItem(i, session_item):
+        def updateSessionItem(i, session_item:SessionItem):
             availableEpisodes = session_item.availableEpisodes
             if number_to_update and i+1>len(self.session_items)-number_to_update:
                 availableEpisodes = len(session_item.anime.retrieveEpisodes())

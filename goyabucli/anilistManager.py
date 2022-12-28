@@ -110,6 +110,13 @@ class AnilistManager():
     def update_session(self, session:SessionManager, verbose=False):
 
         def updateSessionItem(session_item:SessionItem):
+            if not session_item.anilist_id:
+                foundAnime = self.search(session_item.title)
+                if foundAnime:
+                    session_item.anilist_id = foundAnime.anilist_id
+                    session_item.episodesInTotal = foundAnime.episodesInTotal
+                    return
+
             episodesInTotal = self.getTotalEpisodesCount(title=session_item.title, id=session_item.anilist_id)
 
             session_item.episodesInTotal = episodesInTotal or session_item.episodesInTotal
@@ -152,7 +159,6 @@ class AnilistManager():
         }
         '''
         result = self._request(query, variables)
-        print(result)
         result = result['data']['Page']['mediaList']
 
         watch_list: List[SessionItem] = []
@@ -176,8 +182,8 @@ class AnilistManager():
 
     def set_watching(self, session_list:List[SessionItem]):
         query = '''
-            mutation ($mediaId: Int, $progress: Int) {
-              SaveMediaListEntry (mediaId: $mediaId, progress: $progress) {
+            mutation ($mediaId: Int, $progress: Int, $status: MediaListStatus) {
+              SaveMediaListEntry (mediaId: $mediaId, progress: $progress, status: $status) {
                   progress
                   status
               }

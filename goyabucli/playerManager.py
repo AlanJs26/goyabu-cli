@@ -27,7 +27,7 @@ class PlayerManager():
     def isMpvAvailable(self) -> bool:
         return True
 
-    def playWithMPV(self, path:str, seek_time=0, playlistPos=0) -> PlayerManagerResults:
+    def playWithMPV(self, path:str, seek_time=0, playlistPos=None) -> PlayerManagerResults:
         from python_mpv_jsonipc import MPV
 
         if isWindows:
@@ -48,7 +48,7 @@ class PlayerManager():
             sleep(0.2)
             timeout += 1
 
-        if playlistPos:
+        if playlistPos is not None:
             mpv.command('playlist-play-index', playlistPos)
 
             timeout = 0
