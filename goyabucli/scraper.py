@@ -115,7 +115,7 @@ class Episode():
 class Anime():
     def __init__(self, title:str, id:str, source='', pageUrl='', scrapers:List['Scraper']=[]):
         self.scrapers=scrapers
-        self.id = id
+        self.id = id.casefold()
         self.title = title
         self.episodes:Dict[str,Episode] = {
             # 'id1' : Episode('title', 'id1')

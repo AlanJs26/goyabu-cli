@@ -118,8 +118,10 @@ def main():
                 anilistManager.merge_session(sessionmanager, preferRemote=True)
             elif args.anilist_sync == 'replace_local':
                 sessionmanager.session_items = []
-                watching_animes = list(map(lambda x:x.anime, anilistManager.get_watching()))
-                sessionmanager.add(watching_animes)
+                # watching_animes = list(map(lambda x:x.anime, anilistManager.get_watching()))
+                # sessionmanager.add(watching_animes)
+
+                sessionmanager.add_session_items(anilistManager.get_watching())
             elif args.anilist_sync == 'replace_remote':
                 anilistManager.set_watching(sessionmanager.session_items)
 

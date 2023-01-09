@@ -205,7 +205,7 @@ def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_rang
             warning("    eg: anime --config")
 
     print(t('Atualizando o histórico...'))
-    anilistManager.update_session(sessionmanager, True)
+    # anilistManager.update_session(sessionmanager, True)
     sessionmanager.dump(verbose=True, number_to_update=10)
 
     anime_session_item = sessionmanager.find(anime)

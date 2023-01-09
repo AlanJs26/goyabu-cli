@@ -119,7 +119,7 @@ class AnilistManager():
 
             episodesInTotal = self.getTotalEpisodesCount(title=session_item.title, id=session_item.anilist_id)
 
-            session_item.episodesInTotal = episodesInTotal or session_item.episodesInTotal
+            session_item.episodesInTotal = episodesInTotal or session_item.episodesInTotal or session_item.availableEpisodes
 
         pbar = None
         if verbose:
@@ -170,8 +170,8 @@ class AnilistManager():
                 SessionItem(
                     Anime(media['title']['romaji'], media['title']['romaji']),
                     media['episodes'],
-                    media['nextAiringEpisode']['episode'] if media['nextAiringEpisode'] else media['episodes'],
-                    item['progress'],
+                    media['nextAiringEpisode']['episode']-1 if media['nextAiringEpisode'] else media['episodes'],
+                    item['progress'] or 1,
                     '',
                     anilist_id=media['id'],
                     duration=media['duration']*60
@@ -221,16 +221,20 @@ class AnilistManager():
         new_items:List[SessionItem] = []
 
         for watch_item in watch_list:
-            if session.has_anime(watch_item.anime):
+            if session.has_anime(watch_item.anime, anilist_id=watch_item.anilist_id):
                 intersecting_items.append(watch_item)
             else:
                 new_items.append(watch_item)
 
         if preferRemote:
             for watch_item in intersecting_items:
-                session.update(watch_item.anime, watch_item.lastEpisode, watch_item.watchTime, watch_item.duration)
+                session.update(watch_item.anime, watch_item.lastEpisode, watch_item.watchTime, watch_item.duration, episodesInTotal=watch_item.episodesInTotal)
+        else:
+            for watch_item in intersecting_items:
+                session.update(watch_item.anime, episodesInTotal=watch_item.episodesInTotal)
 
-        session.add_session_items(new_items)
+
+        session.add_session_items(new_items, inplace=True)
 
     def _request(self, query, variables):
         if not self.username:

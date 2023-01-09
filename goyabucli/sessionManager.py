@@ -61,8 +61,8 @@ class SessionManager():
         self.session_items:List[SessionItem] = []
         self.session_items = self.load()
 
-    def find(self, anime:Anime) -> Union[SessionItem,None]:
-        found_anime = next((item for item in self.session_items if item.anime.id == anime.id), None)
+    def find(self, anime:Anime, anilist_id:Optional[int]=None) -> Union[SessionItem,None]:
+        found_anime = next((item for item in self.session_items if item.anime.id == anime.id or (anilist_id and (item.anilist_id == anilist_id))), None)
 
         return found_anime
 
@@ -89,7 +89,7 @@ class SessionManager():
                     )
                 )
 
-    def add_session_items(self, session_items:List[SessionItem]):
+    def add_session_items(self, session_items:List[SessionItem], inplace=False):
         all_ids = [item.id for item in self.session_items]
         for session_item in session_items:
             if session_item.id in all_ids: 
@@ -99,28 +99,30 @@ class SessionManager():
                 right_sessionItem.anime = session_item.anime
 
                 # Move session item to the end of the list
-                self.session_items.remove(right_sessionItem)
-                self.session_items.append(right_sessionItem)
+                if not inplace:
+                    self.session_items.remove(right_sessionItem)
+                    self.session_items.append(right_sessionItem)
             else:
                 self.session_items.append(
                     session_item
                 )
 
-    def has_anime(self, anime:Anime) -> bool:
+    def has_anime(self, anime:Anime, anilist_id:Optional[int]=None) -> bool:
         for session_item in self.session_items:
-            if session_item.id == anime.id:
+            if session_item.id == anime.id or (anilist_id and (session_item.anilist_id == anilist_id)):
                 return True
         return False
 
-    def update(self, anime:Anime, lastEpisode:int, watchTime=0, duration=0):
+    def update(self, anime:Anime, lastEpisode=0, watchTime=0, duration=0, episodesInTotal=0):
         right_sessionItem = next(item for item in self.session_items if item.id == anime.id)
 
         if not right_sessionItem:
             raise IndexError(f"Cannot find '{anime.title}' in session items")
 
-        right_sessionItem.lastEpisode = lastEpisode
-        right_sessionItem.watchTime = watchTime
-        right_sessionItem.duration = duration
+        right_sessionItem.lastEpisode = lastEpisode or right_sessionItem.lastEpisode or 1
+        right_sessionItem.watchTime = watchTime or right_sessionItem.watchTime
+        right_sessionItem.duration = duration or right_sessionItem.duration
+        right_sessionItem.episodesInTotal = episodesInTotal or right_sessionItem.episodesInTotal
 
     def remove(self, id:str):
         right_sessionItem = next(item for item in self.session_items if item.id == id)
