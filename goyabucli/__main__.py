@@ -71,10 +71,12 @@ parser.add_argument('--config-dir',    action='store', default='~/.goyabucli',  
 args = parser.parse_args()
 
 # TODO -> implement on demand server TUI
-# TODO -> implement scraper filter to anime selection
+# TODO -> add 'planning to watch' animes in main list as a filter
+# DONE -> implement scraper filter to anime selection
 # DONE -> implement configuration TUI
 #   DONE -> config file
 # DONE -> anilist integration
+# TODO -> finish translation
 
 def main():
 

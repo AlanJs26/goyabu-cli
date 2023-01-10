@@ -3,10 +3,11 @@ from typing import List,Union,Optional
 from datetime import datetime, timezone
 from os import path, makedirs
 import json
-from .dropdown import interactiveTable,bcolors
+from .dropdown import interactiveTable,bcolors,HighlightedTable
 from .translation import t
 from .progress import ProgressBar
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from rich import print as rprint
 
 
 
@@ -212,6 +213,14 @@ class SessionManager():
 
         table_rows = [[str(len(self.session_items)-index),item.title, format_status(item)] for index,item in enumerate(self.session_items)]
 
+        def myfilter(filter_name:str, items:List[List[str]], table:HighlightedTable):
+            table.clear()
+            if filter_name == 'incomplete':
+                table.update(list(filter(lambda x: 'Completo' not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
+            elif filter_name == 'available':
+                table.update(list(filter(lambda x: bcolors['grey'] not in x[2] and bcolors['green'] not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
+            else:
+                table.update(items, message='filter: none', maxListSize=maxListSize)
 
         results = interactiveTable(
             table_rows,
@@ -222,7 +231,9 @@ class SessionManager():
             width=width,
             flexColumn=1,
             highlightRange=(2,2),
-            hintText=hintText
+            hintText=hintText,
+            filters=['none', 'incomplete', 'available'],
+            filter_callback=myfilter
         )
 
         
@@ -231,10 +242,10 @@ class SessionManager():
                 return self.session_items[len(self.session_items)-int(results.text)]
             return results.text
 
-        if results.selectedPos is None:
+        if results.realSelectedPos is None:
             raise Exception('Invalid position')
 
-        return self.session_items[results.selectedPos]
+        return self.session_items[results.realSelectedPos]
 
 
 

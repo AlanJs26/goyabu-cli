@@ -1,13 +1,12 @@
 import sys, os
 import re
+from copy import deepcopy
 import termtables as tt
 from math import floor
 from functools import reduce
-from typing import List,Callable,Optional,cast,Union,Dict
+from typing import List,Callable,Optional,cast,Union,Dict,Tuple
 from dataclasses import dataclass
 from goyabucli.utils import nameTrunc
-
-from copy import deepcopy
 
 isWindows = sys.platform == 'win32'
 
@@ -88,30 +87,63 @@ class Highlight:
 
 
 class HighlightedTable:
-    def __init__(self, items:list, header:list, highlights:List[Highlight], alignment="rc", highlightRange=(1,1), maxListSize=5, flexColumn=0, width=0):
-        newItems = deepcopy(items)
-        if width>0:
-            if flexColumn < 0 or flexColumn >= len(header):
-                raise Exception('Invalid flexColumn: must be a valid column index')
-            for item in newItems:
+    def __init__(self, items:list, header:list, highlights:List[Highlight], alignment="rc", highlightRange=(1,1), maxListSize=5, flexColumn=0, width=0, message=''):
+        self.highlightRange=highlightRange
+        self.maxListSize=maxListSize
+        self.highlights=[]
+
+        self.update(items,header,highlights,alignment,highlightRange,maxListSize,flexColumn,width, message)
+
+    def update(self,
+               items:List[List[str]],
+               header:Optional[List[str]]=None,
+               highlights:Optional[List[Highlight]]=None,
+               alignment:Optional[str]=None,
+               highlightRange:Optional[Tuple[int, int]]=None,
+               maxListSize:Optional[int]=None,
+               flexColumn:Optional[int]=None,
+               width:Optional[int]=None,
+               message:Optional[str]=None):
+
+        self.items = deepcopy(items)
+        if flexColumn is not None:
+            self.flexColumn = flexColumn
+        if alignment is not None:
+            self.alignment = alignment
+        if header is not None:
+            self.header = header
+        if width is not None:
+            self.width = width
+        if message is not None:
+            self.message = message
+        if highlightRange is not None:
+            self.highlightRange = highlightRange
+        if highlights is not None:
+            self.highlights = highlights
+        if maxListSize is not None:
+            self.maxListSize = maxListSize
+
+
+        if self.width>0:
+            if self.flexColumn < 0 or self.flexColumn >= len(self.header):
+                raise Exception('Invalid self.flexColumn: must be a valid column index')
+            for item in self.items:
                 linelength = reduce(lambda p,n:len(n)+p, item, 0)
-                item[flexColumn] = nameTrunc(item[flexColumn], linelength+18)
+                item[self.flexColumn] = nameTrunc(item[self.flexColumn], linelength+18)
         table = tt.to_string(
-            newItems,
-            header=header,
+            self.items,
+            header=self.header,
             style=tt.styles.rounded,
-            alignment=alignment,
+            alignment=self.alignment,
         )
         table = table.split('\n')
         table = '\n'.join(table[0:2]+[table[2]]+table[1::2][1:]+table[-1:])
         self.tableLines = table.split('\n')[3:-1]
         self.tableHeader = '\n'.join(table.split('\n')[:3])
         self.tableFooter = table.split('\n')[-1]
-        self.highlights = highlights
-        self.highlightRange = highlightRange
-        self.maxListSize = maxListSize
 
-    def update(self, highlights:List[Highlight]=[], upOffset=0, scrollAmount=0):
+
+    def display(self, highlights:List[Highlight]=[], upOffset=0, scrollAmount=0):
         if(not highlights): highlights=self.highlights
 
         if self.maxListSize > len(self.tableLines):
@@ -158,15 +190,32 @@ class HighlightedTable:
             print(self.tableFooter)
 
 
-
         self.cursorToBeginning(0)
 
+        if self.message:
+            self.cursorDown(2)
+            message = self.message.split('\n') 
+
+            for item in message:
+                sys.stdout.write(f"\033[{len(self.tableLines[0])+2}C")
+                print(item)
+            self.cursorUp(len(message)+2)
+
+    def cursorDown(self, amount=0):
+        sys.stdout.write(f"\033[{amount}E")
+
+    def cursorUp(self, amount=0):
+        sys.stdout.write(f"\033[{amount}F")
+
     def cursorToEnd(self, downOffset=0):
-        sys.stdout.write(f"\033[{self.maxListSize+4+downOffset}E")
+        self.cursorDown(self.maxListSize+4+downOffset)
 
     def cursorToBeginning(self, upOffset=0):
-        sys.stdout.write(f"\033[{self.maxListSize+4+upOffset}F")
+        self.cursorUp(self.maxListSize+4+upOffset)
         sys.stdout.write("\r")
+
+    def eraseLine(self):
+        sys.stdout.write(f"\033[2K")
 
     def clear(self):
         sys.stdout.write(f"\033[J")
@@ -235,21 +284,26 @@ multiselectionTable:KeyCallback = cast(KeyCallback,_multiselectionTable)
 @dataclass
 class TableResults:
     selectedPos: Union[int,None]
+    realSelectedPos: Union[int,None]
     selectedItem: Union[list,None]
     text: str
     items: Union[Dict[int, list],None]
 
 
+FilterCallback = Callable[[str,List[List[str]], HighlightedTable], None]
+
+
 def interactiveTable(
-    items:List[list], header:list, alignment="rc", keyCallback:Optional[KeyCallback]=None,
+    items:List[List[str]], header:list, alignment="rc", keyCallback:Optional[KeyCallback]=None,
         clipPos=True, behaviour="single", hintText='Digite: ',
         maxListSize=5, staticHighlights:List[Highlight]=[], highlightRange=(1,1),
-        width=0, flexColumn=0) -> TableResults:
+    width=0, flexColumn=0, filters:List[str]=[], filter_callback:Optional[FilterCallback]=None) -> TableResults:
 
     if len(header) <= 1:
         raise Exception('the number of columns must be greater than 1')
     if not items:
         return TableResults(
+            realSelectedPos=None,
             selectedPos=None,
             selectedItem=None,
             text='',
@@ -260,63 +314,99 @@ def interactiveTable(
     ignoredKeys = []
     inputText = ''
 
-    def selectedStyle(pos:int) -> Highlight:
-        return Highlight(pos=pos, color='underline')
+    currentFilterIndex=0
 
     if 'multiSelect' in behaviour:
         keyCallback = multiselectionTable
 
-    if 'WithText' in behaviour:
-        ignoredKeys = ['j', 'k', '[', 'q'] # ignore default event while in text input
-        clipPos=False # allow reach text position
-        highlightPos = len(items) # last position (text input position)
+    def selectedStyle(pos:int) -> Highlight:
+        return Highlight(pos=pos, color='underline')
 
     highlights : List[Highlight] = [selectedStyle(highlightPos)]
 
     table = HighlightedTable(items, header, highlights, alignment, highlightRange=highlightRange, maxListSize=maxListSize, width=width,flexColumn=flexColumn)
-    table.update([*staticHighlights,*highlights], scrollAmount=highlightPos)
-    #  table.cursorToEnd(-1 if 'WithText' in behaviour else 0)
+
+    if 'WithText' in behaviour:
+        ignoredKeys = ['j', 'k','l','h', '[', 'q'] # ignore default event while in text input
+        clipPos=False # allow reach text position
+        highlightPos = len(table.items) # last position (text input position)
+
+    table.display([*staticHighlights,*highlights], scrollAmount=highlightPos)
     table.cursorToEnd(0)
 
     if 'WithText' in behaviour: 
-        sys.stdout.write(f"\n\033[2K{(hintText if inputText or highlightPos==len(items) else '')+inputText}")
-        #  sys.stdout.write(f"\033[1F")
+        sys.stdout.write("\n")
+        table.eraseLine()
+        sys.stdout.write(f"{(hintText if inputText or highlightPos==len(table.items) else '')+inputText}")
+
+    shouldQuit = False
+
+    def switchFilter(direction='next'):
+        nonlocal currentFilterIndex
+        nonlocal highlightPos
+        nonlocal table
+        nonlocal items
+        nonlocal filters
+
+        if len(filters) and filter_callback is not None:
+            if direction == 'next':
+                currentFilterIndex = (currentFilterIndex+1)%len(filters)
+            else:
+                currentFilterIndex = (currentFilterIndex-1)%len(filters)
+
+            selectedItem = table.items[highlightPos] if highlightPos<len(table.items) else None
+            filter_callback(filters[currentFilterIndex], items, table)
+
+            realSelectedPos = table.items.index(selectedItem) if selectedItem in table.items else None
+
+            if realSelectedPos is not None:
+                highlightPos = realSelectedPos
+            elif highlightPos >= len(table.items):
+                highlightPos=len(table.items)-1
 
     while True:
         try:
             key=readchr()
-            # print(key)
-            # continue
         except KeyboardInterrupt:
-            print('\n')
-            os._exit(0)
+            shouldQuit = True
+            break
 
         table.cursorToBeginning(1 if 'WithText' in behaviour else 0)
-        #  table.cursorToBeginning(0)
 
         if key not in ignoredKeys:
             if key == 'q':
-                os._exit(0)
+                shouldQuit = True
+                break
 
             if key == '\n' or key == '\r':
                 break
 
-            if key == 'j':
-                highlightPos=highlightPos+1 if highlightPos<len(items)-1 or clipPos==False else highlightPos
+            elif key == 'j':
+                highlightPos=highlightPos+1 if highlightPos<len(table.items)-1 or clipPos==False else highlightPos
 
-            if key == 'k' or key == '\t':
+            elif key == 'k' or key == '\t':
                 highlightPos=highlightPos-1 if highlightPos>0 or clipPos==False else highlightPos
 
-            if key == '[':
+            elif key == 'l':
+                switchFilter('next')
+
+            elif key == 'h' and len(filters) and filter_callback is not None:
+                switchFilter('previous')
+
+            elif key == '[':
                 key=readchr()
                 ignoredKeys = []
 
-                #  if key == 'C': # right
-                #  if key == 'D': # left
-                if  key == 'A':    # up
+                if key == 'C' and len(filters) and filter_callback is not None: # right
+                    switchFilter('next')
+
+                elif key == 'D' and len(filters) and filter_callback is not None: # left
+                    switchFilter('previous')
+
+                elif  key == 'A':    # up
                     highlightPos=highlightPos-1 if highlightPos>0            or clipPos==False else highlightPos
                 elif key == 'B':  # down
-                    highlightPos=highlightPos+1 if highlightPos<len(items)-1 or clipPos==False else highlightPos
+                    highlightPos=highlightPos+1 if highlightPos<len(table.items)-1 or clipPos==False else highlightPos
 
         highlights[0] = selectedStyle(highlightPos) 
 
@@ -329,7 +419,7 @@ def interactiveTable(
             inputText = results.text
             # highlights, highlightPos, placeholder, ignoredKeys = keyCallback(key, table, highlights, highlightPos, ignoredKeys, placeholder)
 
-        table.update(
+        table.display(
             [*staticHighlights,*highlights],
             len(inputText.split('\n')) if 'WithText' in behaviour else 0,
             scrollAmount=highlightPos-floor(maxListSize/2) if highlightPos>maxListSize/2 else 0
@@ -337,12 +427,8 @@ def interactiveTable(
 
         if 'WithText' in behaviour: 
             table.cursorToEnd(0)
-            #  sys.stdout.write(f"\033[1E")
-            #  sys.stdout.write(f"\033[K")
-            #  sys.stdout.write(f"\033[1F")
 
-            sys.stdout.write(f"\n\033[2K{(hintText if inputText or highlightPos==len(items) else '')+inputText}")
-            #  sys.stdout.write(f"\033[1F")
+            sys.stdout.write(f"\n\033[2K{(hintText if inputText or highlightPos==len(table.items) else '')+inputText}")
         else:
             table.cursorToEnd(0)
 
@@ -351,29 +437,35 @@ def interactiveTable(
     # termios.tcsetattr(sys.stdin, termios.TCSADRAIN, filedescriptors)
     endRawmode()
 
-    selectedItems = {item.pos: items[item.pos] for item in highlights if item.color == 'fail'}
+    if shouldQuit:
+        os._exit(0)
+
+    selectedItems = {item.pos: table.items[item.pos] for item in highlights if item.color == 'fail'}
+    selectedItem = table.items[highlightPos] if highlightPos<len(table.items) else None
+
     return TableResults(
-        selectedPos  = highlightPos if highlightPos < len(items) else None,
-        selectedItem = items[highlightPos] if highlightPos<len(items) else None,
-        items        = selectedItems if selectedItems else None,
-        text         = inputText
+        selectedPos     = highlightPos if highlightPos < len(table.items) else None,
+        selectedItem    = selectedItem,
+        items           = selectedItems if selectedItems else None,
+        realSelectedPos = items.index(selectedItem) if selectedItem else None,
+        text            = inputText
     )
 
 if __name__ == "__main__":
     tablelist = [
-        ['episodio 1', 'episodio 0',  'um'     ],
-        ['episodio 2', 'episodio 1',  'dois'   ],
-        ['episodio 3', 'episodio 2',  'tres'   ],
-        ['episodio 4', 'episodio 3',  'quatro' ],
-        ['episodio 4', 'episodio 4',  'quatro' ],
-        ['episodio 5', 'episodio 5',  'cinco'  ],
-        ['episodio 6', 'episodio 6',  'seis'   ],
-        ['episodio 7', 'episodio 7',  'sete'   ],
-        ['episodio 8', 'episodio 8',  'oito'   ],
-        ['episodio 5', 'episodio 9',  'nove'   ],
-        ['episodio 6', 'episodio 10', 'dez'    ],
-        ['episodio 7', 'episodio 11', 'onze'   ],
-        ['episodio 8', 'episodio 12', 'doze'   ],
+        ['episodio 1', 'ichi',  'um'     ],
+        ['episodio 2', 'ni',  'dois'   ],
+        ['episodio 3', 'san',  'tres'   ],
+        ['episodio 4', 'yon',  'quatro' ],
+        ['episodio 5', 'go',  'quatro' ],
+        ['episodio 6', 'roku',  'cinco'  ],
+        ['episodio 7', 'nana',  'seis'   ],
+        ['episodio 8', 'hachi',  'sete'   ],
+        ['episodio 9', 'kyuu',  'oito'   ],
+        ['episodio 10', 'jyuu',  'nove'   ],
+        ['episodio 11', 'jyuu ichi', 'dez'    ],
+        ['episodio 12', 'jyuu ni', 'onze'   ],
+        ['episodio 13', 'jyuu san', 'doze'   ],
     ]
 
     print("before")
@@ -385,40 +477,29 @@ if __name__ == "__main__":
     #     if key == 'q':
     #         break
 
-    # while results[0] != None:
+
+    def myfilter(filter_name:str, items:List[List[str]], table:HighlightedTable):
+        table.clear()
+        if filter_name == 'half':
+            table.update(list(filter(lambda x:int(x[0].split(' ')[1])%2 == 0, items)), message='filter: half')
+        else:
+            table.update(items, message='filter: none')
+
     results = interactiveTable(
         tablelist,
         ['' ,"Episódios", "Nome"],
         "rcc",
-        behaviour='multiSelect',
+        behaviour='multiSelectWithText',
         maxListSize=7,
         staticHighlights=staticHighlights,
-        highlightRange=(2,2)
+        highlightRange=(2,2),
+        filters=['none','half'],
+        filter_callback=myfilter
+
     )
     print(results)
 
     print(results.text)
-
-    # posToRemove = [item[0] for item in results[1][1:]]
-    # tablelist = [item for i, item in enumerate(tablelist) if i not in posToRemove]
-    # staticHighlights = [item for item in staticHighlights if item[0] not in posToRemove]
-    #
-    # print(results)
-
-
-    # if results[-1][len('Digite: '):] != 'delete':
-    #     posToRemove = [item[0] for item in results[1][1:]]
-    #     newTablelist = [item for i, item in enumerate(tablelist) if i not in posToRemove]
-    #
-    #
-    #     results = interactiveTable(newTablelist, ["Episódios", "Nome"], "rc",  behaviour='multiSelect')
-    #     posToRemove = [item[0] for item in results[1][1:]]
-    #     newTablelist = [item for i, item in enumerate(newTablelist) if i not in posToRemove]
-    #     results = interactiveTable(newTablelist, ["Episódios", "Nome"], "rc",  behaviour='single')
-    #     print(newTablelist)
-
-    #  print("after")
-
 
 #  termios.tcsetattr(sys.stdin, termios.TCSADRAIN,filedescriptors)
     
