@@ -41,6 +41,21 @@ class SessionItem():
         else:
             return 'ongoing'
 
+    def __repr__(self):
+        return f'''<SessionItem
+    id={self.id}
+    title={self.title}
+    date_utc={self.date_utc} 
+    episodesInTotal={self.episodesInTotal} 
+    availableEpisodes={self.availableEpisodes} 
+    watchTime={self.watchTime} 
+    lastEpisode={self.lastEpisode} 
+    lastSource={self.lastSource} 
+    duration={self.duration} 
+    anilist_id={self.anilist_id} 
+>
+    '''
+
 
 class SessionManager():
     def __init__(self, root='', scrapers:List[Scraper]=[]):
@@ -61,6 +76,13 @@ class SessionManager():
 
         self.session_items:List[SessionItem] = []
         self.session_items = self.load()
+
+    def __repr__(self):
+        out=''
+        for item in self.session_items:
+            out+=repr(item)+'\n'
+        return out
+            
 
     def find(self, anime:Anime, anilist_id:Optional[int]=None) -> Union[SessionItem,None]:
         found_anime = next((item for item in self.session_items if item.anime.id == anime.id or (anilist_id and (item.anilist_id == anilist_id))), None)
@@ -158,6 +180,9 @@ class SessionManager():
         content = {}
 
         def updateSessionItem(i, session_item:SessionItem):
+            if session_item.status == 'complete' and session_item.anilist_id:
+                return
+
             availableEpisodes = session_item.availableEpisodes
             if number_to_update and i+1>len(self.session_items)-number_to_update:
                 availableEpisodes = len(session_item.anime.retrieveEpisodes())
@@ -166,7 +191,7 @@ class SessionManager():
                 'title': session_item.title,
                 'pageUrl': session_item.anime.pageUrl,
                 'utc': int(session_item.date_utc.timestamp()),
-                'episodesInTotal': session_item.episodesInTotal,
+                'episodesInTotal': session_item.episodesInTotal or availableEpisodes,
                 'availableEpisodes': availableEpisodes,
                 'lastEpisode': session_item.lastEpisode,
                 'lastSource': session_item.lastSource,
@@ -189,7 +214,7 @@ class SessionManager():
             pbar.close()
 
         with open(path.join(self.root,self.filename), 'w') as file:
-            json.dump(content, file)
+            json.dump(content, file, indent=4)
 
     def select(self, hintText=t('Digite: '), maxListSize=5, width=100, query='') -> Union[SessionItem,str]:
 

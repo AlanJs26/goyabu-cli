@@ -121,12 +121,34 @@ class AnilistManager():
 
             session_item.episodesInTotal = episodesInTotal or session_item.episodesInTotal or session_item.availableEpisodes
 
+
+        watch_list = self.get_watching()
+
+        new_items:List[SessionItem] = []
+
+        for item in session.session_items:
+            if item.status != 'complete' or not item.anilist_id:
+                new_items.append(item)
+
+
+        for watch_item in watch_list:
+            found_item = session.find(watch_item.anime, anilist_id=watch_item.anilist_id)
+
+            if found_item:
+                found_item.anilist_id = watch_item.anilist_id
+                found_item.episodesInTotal = watch_item.episodesInTotal
+                if found_item in new_items:
+                    new_items.remove(found_item)
+
+        if not new_items:
+            return
+
         pbar = None
         if verbose:
             pbar = ProgressBar(total=len(session.session_items), postfix='Sincronizando com Anilist', leave=False)
 
         with ThreadPoolExecutor(max_workers=4) as executor:
-            futures = [executor.submit(updateSessionItem, session_item) for session_item in session.session_items]
+            futures = [executor.submit(updateSessionItem, session_item) for session_item in new_items]
             for _ in as_completed(futures):
                 if pbar:
                     pbar.update(1)
