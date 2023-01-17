@@ -1,6 +1,7 @@
 from functools import wraps
 from multiprocessing import Process
 from os import get_terminal_size
+import re
 
 
 
@@ -30,19 +31,12 @@ search_buffer = {}
 headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
 def animeTitle2Id(title:str):
+    remove_patterns = [r'\(tv\)', r'\(dub\)']
+
+    for pattern in remove_patterns:
+        title = re.sub(pattern, '', title)
+
     return title
-    # try:
-    #     result = anilistClient.search_anime(title,1)
-    #
-    #     if not result:
-    #         return 0
-    #     
-    #     searchResult = result[0]
-    #     foundAnime = anilistClient.get_anime(searchResult.id)
-    #
-    #     return foundAnime.title.romaji
-    # except:
-    #     return title
 
 def nameTrunc(text, length):
     columns = get_terminal_size().columns

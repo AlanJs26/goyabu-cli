@@ -3,7 +3,7 @@ from .scraperManager import ScraperManager
 from .anilistManager import AnilistManager, MissingToken
 from .sessionManager import SessionManager, SessionItem
 from .playerManager import PlayerManager
-from .dropdown import Highlight, interactiveTable
+from .dropdown import Cursor, Highlight, interactiveTable
 from .translation import t, error, warning
 from .progress import progress
 import termtables as tt
@@ -157,11 +157,11 @@ def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_rang
     for episode in episodes:
         if not episode.getLinksBySource(anime.source):
             error(t('Não foi encontrado nenhum link válido para o episódio {}', episode.index+1))
-
+            exit()
 
     player = PlayerManager(anime.title, anime.source, episodes, root=config.config_dir)
 
-    playlist_file = player.generatePlaylistFile()
+    playlist_file = player.generatePlaylistFile('playlist')
 
     if not playlist_file:
         error(t('Não foi possível gerar o arquivo m3u'))
@@ -287,6 +287,129 @@ def configTUI(config: Config, anilistManager:AnilistManager):
 
 
 
+def serverTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_range:Dict[str,Union[None,int]], always_yes:bool, default_scraper:List[str], config=Config('','','','', False)):
+    manager = ScraperManager()
+    sessionmanager = SessionManager(scrapers=manager.scrapers, root=config.config_dir)
+
+
+    selected_animes = []
+
+    while True:
+        selected_item = sessionmanager.multi_select(query=default_anime_name, maxListSize=10)
+
+        if isinstance(selected_item,str):
+            anime_title = selected_item if isinstance(selected_item,str) else selected_item.title 
+            animes = manager.search(anime_title, default_scraper)
+
+            if not animes:
+                error(t("Nenhum anime encontrado com o nome '{}'", anime_title))
+                input('Pressione Enter para continuar')
+                Cursor.up(2)
+                Cursor.startLine()
+                continue
+
+            anime_names = [['',anime.title, ','.join(anime.pageUrl.keys())] for anime in animes]
+
+            if not always_yes:
+                results = interactiveTable(
+                    anime_names,
+                    ['',t('Animes'), t('Fonte')],
+                    'llc',
+                    maxListSize=7,
+                    highlightRange=(2,2),
+                    width=20,
+                    flexColumn=1
+                )
+
+                if results.selectedPos is None:
+                    print(results)
+                    exit()
+
+                selected_animes.append(animes[results.selectedPos])
+            else:
+                selected_animes.append(animes[0])
+
+            selected = interactiveTable(
+                [
+                    ['','Não'],
+                    ['','Sim'],
+                ],
+                ['','Deseja escolher mais um?'],
+                "cl",
+                highlightRange=(0,1),
+                staticHighlights=[
+                    Highlight(0, 'green'),
+                    Highlight(1, 'fail'),
+                ],
+            )
+            if not selected.selectedItem:
+                break
+
+            if selected.selectedItem[1] == 'Não':
+                break
+        else:
+            selected_animes.extend(map(lambda x: x.anime, selected_item))
+            break
+
+
+
+    tt.print(
+        list(map(lambda x: [x.title], selected_animes)),
+        header=[t("Animes Selecionados")],
+        style=tt.styles.rounded,
+        alignment="c",
+    )
+
+
+    for selected_anime in selected_animes:
+        session_anime = sessionmanager.find(selected_anime)
+
+        if session_anime:
+            continue
+
+        if len(selected_anime.availableScrapers) > 1:
+            if not always_yes:
+                results = interactiveTable(
+                    items=[['',scraperName] for scraperName in selected_anime.availableScrapers],
+                    header=['',t('Escolha uma fonte')],
+                    alignment='ll',
+                    behaviour='single',
+                    maxListSize=10,
+                    highlightRange=(0,1),
+                    width=20,
+                    flexColumn=1
+                )
+
+                if results.selectedItem is None:
+                    raise Exception(t('Não foi possível selecionar uma fonte'))
+
+                selected_anime.source = results.selectedItem[1]
+            else:
+                selected_anime.source = selected_anime.availableScrapers[0]
+
+    # TODO -> create a serverManager class that receive a list of SessionItem and serve a m3u file, in a way that every entry point to the server who returns the correct link on demand
+
+
+    #     sessionmanager.add([anime])
+    #
+    # # sessionmanager.update(anime, results['lastEpisode'], results['watchTime'], results['duration'])
+    #
+    # try:
+    #     anilistManager.merge_session(sessionmanager)
+    # except MissingToken:
+    #     if not config.silent:
+    #         warning("wasn't possible sync with anilist. Missing authentification token")
+    #         warning("to get rid of this message, mark the option 'silent' to True in the config")
+    #         warning("    eg: anime --config")
+    #
+    # print(t('Atualizando o histórico...'))
+    # # anilistManager.update_session(sessionmanager, True)
+    # sessionmanager.dump(verbose=True, number_to_update=10)
+    #
+    # anime_session_item = sessionmanager.find(anime)
+    #
+    # if anime_session_item:
+    #     anilistManager.set_watching([anime_session_item])
 
 
 

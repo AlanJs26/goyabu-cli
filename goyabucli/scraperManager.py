@@ -2,8 +2,10 @@ from typing import List, Dict
 from .scraper import Scraper,Anime,bindScrapers
 from .scrapers.goyabuNew import Goyabu
 from .scrapers.animefire import AnimeFire
+from .scrapers.anime123 import Anime123
 
 SCRAPERS:List[Scraper] = [AnimeFire(), Goyabu()]
+# SCRAPERS:List[Scraper] = [Anime123()]
 
 class ScraperManager():
     def __init__(self):

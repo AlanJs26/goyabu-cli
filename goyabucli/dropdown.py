@@ -80,6 +80,30 @@ def endRawmode():
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, filedescriptors)
     filedescriptors=None
 
+class Cursor:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def down(amount=0):
+        sys.stdout.write(f"\033[{amount}E")
+
+    @staticmethod
+    def startLine():
+        sys.stdout.write("\r")
+
+    @staticmethod
+    def up(amount=0):
+        sys.stdout.write(f"\033[{amount}F")
+
+    @staticmethod
+    def eraseLine():
+        sys.stdout.write(f"\033[2K")
+
+    @staticmethod
+    def clearForward():
+        sys.stdout.write(f"\033[J")
+
 @dataclass
 class Highlight:
     pos: int
@@ -193,32 +217,20 @@ class HighlightedTable:
         self.cursorToBeginning(0)
 
         if self.message:
-            self.cursorDown(2)
+            Cursor.down(2)
             message = self.message.split('\n') 
 
             for item in message:
                 sys.stdout.write(f"\033[{len(self.tableLines[0])+2}C")
                 print(item)
-            self.cursorUp(len(message)+2)
-
-    def cursorDown(self, amount=0):
-        sys.stdout.write(f"\033[{amount}E")
-
-    def cursorUp(self, amount=0):
-        sys.stdout.write(f"\033[{amount}F")
+            Cursor.up(len(message)+2)
 
     def cursorToEnd(self, downOffset=0):
-        self.cursorDown(self.maxListSize+4+downOffset)
+        Cursor.down(self.maxListSize+4+downOffset)
 
     def cursorToBeginning(self, upOffset=0):
-        self.cursorUp(self.maxListSize+4+upOffset)
-        sys.stdout.write("\r")
-
-    def eraseLine(self):
-        sys.stdout.write(f"\033[2K")
-
-    def clear(self):
-        sys.stdout.write(f"\033[J")
+        Cursor.up(self.maxListSize+4+upOffset)
+        Cursor.startLine()
 
 @dataclass
 class KeyCallbackReturn:
@@ -279,7 +291,46 @@ def _multiselectionTable(key: str, table:HighlightedTable, highlightList: List[H
         ignoredKeys=ignoredKeys
     )
 
+
+def _singleselectionTable(key: str, table:HighlightedTable, highlightList: List[Highlight], highlightPos: int, ignoredKeys=[], inputText="") -> KeyCallbackReturn:
+    currentHighlight = highlightList[0]
+
+    if highlightPos < 1: 
+        highlightPos = 0
+        currentHighlight.pos = 0
+
+    if highlightPos >= len(table.tableLines) or ignoredKeys:
+        highlightPos = len(table.tableLines)
+        currentHighlight.pos = len(table.tableLines)
+        if ignoredKeys:
+            if ord(key) == 9:
+                highlightPos = len(table.tableLines) -1
+                currentHighlight.pos = len(table.tableLines) -1
+                ignoredKeys=[]
+            elif (key == '[' if isWindows else ord(key) == 27):
+                key=readchr(1) if isWindows else readchr(2) 
+                if key == '[A' or key == 'A':
+                    highlightPos = len(table.tableLines) -1
+                    currentHighlight.pos = len(table.tableLines) -1
+                    ignoredKeys=[]
+                key = key[0]
+            elif ord(key) == 127 or key == '\b':
+                inputText = inputText[:-1]
+            else: 
+                inputText+=key
+        else:
+            ignoredKeys = ['j', 'k', '[', 'q']
+
+    return KeyCallbackReturn(
+        highlights=highlightList,
+        pos=highlightPos,
+        text=inputText,
+        placeholder=inputText,
+        ignoredKeys=ignoredKeys
+    )
+
 multiselectionTable:KeyCallback = cast(KeyCallback,_multiselectionTable)
+singleselectionTable:KeyCallback = cast(KeyCallback,_singleselectionTable)
 
 @dataclass
 class TableResults:
@@ -294,7 +345,7 @@ FilterCallback = Callable[[str,List[List[str]], HighlightedTable], None]
 
 
 def interactiveTable(
-    items:List[List[str]], header:list, alignment="rc", keyCallback:Optional[KeyCallback]=None,
+    items:List[List[str]], header:list, alignment="rc", keyCallback:Optional[KeyCallback]=singleselectionTable,
         clipPos=True, behaviour="single", hintText='Digite: ',
         maxListSize=5, staticHighlights:List[Highlight]=[], highlightRange=(1,1),
     width=0, flexColumn=0, filters:List[str]=[], filter_callback:Optional[FilterCallback]=None) -> TableResults:
@@ -318,6 +369,8 @@ def interactiveTable(
 
     if 'multiSelect' in behaviour:
         keyCallback = multiselectionTable
+    elif 'single' in behaviour:
+        keyCallback = singleselectionTable
 
     def selectedStyle(pos:int) -> Highlight:
         return Highlight(pos=pos, color='underline')
@@ -336,7 +389,7 @@ def interactiveTable(
 
     if 'WithText' in behaviour: 
         sys.stdout.write("\n")
-        table.eraseLine()
+        Cursor.eraseLine()
         sys.stdout.write(f"{(hintText if inputText or highlightPos==len(table.items) else '')+inputText}")
 
     shouldQuit = False
@@ -433,14 +486,14 @@ def interactiveTable(
             table.cursorToEnd(0)
 
 
-    table.clear()
+    Cursor.clearForward()
     # termios.tcsetattr(sys.stdin, termios.TCSADRAIN, filedescriptors)
     endRawmode()
 
     if shouldQuit:
         os._exit(0)
 
-    selectedItems = {item.pos: table.items[item.pos] for item in highlights if item.color == 'fail'}
+    selectedItems = {items.index(table.items[item.pos]): table.items[item.pos] for item in highlights if item.color == 'fail'}
     selectedItem = table.items[highlightPos] if highlightPos<len(table.items) else None
 
     return TableResults(
@@ -479,7 +532,7 @@ if __name__ == "__main__":
 
 
     def myfilter(filter_name:str, items:List[List[str]], table:HighlightedTable):
-        table.clear()
+        Cursor.clearForward()
         if filter_name == 'half':
             table.update(list(filter(lambda x:int(x[0].split(' ')[1])%2 == 0, items)), message='filter: half')
         else:

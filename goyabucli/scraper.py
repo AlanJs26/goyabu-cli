@@ -1,4 +1,6 @@
+from abc import ABC, abstractmethod
 from typing import List,Tuple,Set,Dict
+from lxml.etree import iselement
 
 class VideoUrl():
     def __init__(self, url:str, quality:str, lang:str, source:str, scrapers:List['Scraper']=[], ready=False):
@@ -15,7 +17,10 @@ class VideoUrl():
         if right_scraper == None:
             raise LookupError(f"Cannot find matching scraper for '{self.source}'")
 
-        found_links = right_scraper.parseLink(self)
+        try:
+            found_links = right_scraper.parseLink(self)
+        except Exception:
+            return []
 
         return found_links
 
@@ -127,11 +132,14 @@ class Anime():
             source: pageUrl
         }
 
-    def retrieveEpisodes(self) -> List[Episode]:
+    def retrieveEpisodes(self, supress=False) -> List[Episode]:
         right_scraper = next((scraper for scraper in self.scrapers if scraper.name == self.source), None)
 
         if right_scraper == None:
-            raise LookupError(f"Cannot find matching scraper for '{self.source}'")
+            if supress:
+                return []
+            else:
+                raise LookupError(f"Cannot find matching scraper for '{self.source}'")
 
         for index,episode in enumerate(right_scraper.episodes(self.pageUrl[self.source])):
             episode.index = index
@@ -160,23 +168,28 @@ class Anime():
         for episode in new_anime.episodes.values():
             self._addEpisode(episode)
 
-class Scraper():
+class Scraper(ABC):
     def __init__(self, name:str, lang:List[str], scrapers:List['Scraper']=[]):
         self.scrapers:List['Scraper']=scrapers
         self.name = name
         self.lang = lang
 
+    @abstractmethod
     def parseLink(self, link:VideoUrl) -> List[VideoUrl]:
         raise NotImplementedError(f"parseLink not implemented for '{self.name}'")
 
+    @abstractmethod
     def search(self, query:str) -> List[Anime]:
         raise NotImplementedError(f"search not implemented for '{self.name}'")
-        # return [Anime('anime_title', 'anime1')]
 
+    @abstractmethod
     def episodes(self, animePageUrl) -> List[Episode]:
         raise NotImplementedError(f"episodes not implemented for '{self.name}'")
-        # return [Episode('title','ep1')]
 
+    def is_element_valid(self, element):
+        if isinstance(element, list) and iselement(element[0]) and element[0]:
+            return True
+        return False
 
 
 

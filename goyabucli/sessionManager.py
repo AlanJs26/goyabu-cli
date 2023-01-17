@@ -3,20 +3,17 @@ from typing import List,Union,Optional
 from datetime import datetime, timezone
 from os import path, makedirs
 import json
-from .dropdown import interactiveTable,bcolors,HighlightedTable
+from .dropdown import Cursor, interactiveTable,bcolors,HighlightedTable
 from .translation import t
 from .progress import ProgressBar
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from rich import print as rprint
-
-
 
 class SessionItem():
     def __init__(self, anime:Anime, episodesInTotal:int, availableEpisodes:int, lastEpisode:int, lastSource:str, watchTime=0, duration=0, anilist_id:Optional[int]=None, date_utc=int(datetime.now().timestamp())):
         self.anime = anime
 
         self.date_utc = datetime.fromtimestamp(date_utc,timezone.utc)
-        self.episodesInTotal = episodesInTotal
+        self.episodesInTotal = episodesInTotal or availableEpisodes
         self.availableEpisodes = availableEpisodes
         self.watchTime = watchTime
         self.lastEpisode = lastEpisode
@@ -85,9 +82,10 @@ class SessionManager():
             
 
     def find(self, anime:Anime, anilist_id:Optional[int]=None) -> Union[SessionItem,None]:
-        found_anime = next((item for item in self.session_items if item.anime.id == anime.id or (anilist_id and (item.anilist_id == anilist_id))), None)
-
-        return found_anime
+        for session_item in self.session_items:
+            if session_item.id == anime.id or (anilist_id and (session_item.anilist_id == anilist_id)):
+                return session_item
+        return None
 
     def add(self, animes:List[Anime]):
         all_ids = [item.id for item in self.session_items]
@@ -136,8 +134,8 @@ class SessionManager():
                 return True
         return False
 
-    def update(self, anime:Anime, lastEpisode=0, watchTime=0, duration=0, episodesInTotal=0):
-        right_sessionItem = next(item for item in self.session_items if item.id == anime.id)
+    def update(self, anime:Anime, lastEpisode=0, watchTime=0, duration=0, episodesInTotal=0, anilist_id=None):
+        right_sessionItem = self.find(anime, anilist_id)
 
         if not right_sessionItem:
             raise IndexError(f"Cannot find '{anime.title}' in session items")
@@ -147,8 +145,12 @@ class SessionManager():
         right_sessionItem.duration = duration or right_sessionItem.duration
         right_sessionItem.episodesInTotal = episodesInTotal or right_sessionItem.episodesInTotal
 
-    def remove(self, id:str):
-        right_sessionItem = next(item for item in self.session_items if item.id == id)
+    def remove(self, anime:Anime):
+        right_sessionItem = self.find(anime)
+
+        if not right_sessionItem:
+            raise IndexError(f"Cannot find '{anime.title}' in session items")
+
         self.session_items.remove(right_sessionItem)
 
     def load(self) -> List[SessionItem]:
@@ -180,12 +182,10 @@ class SessionManager():
         content = {}
 
         def updateSessionItem(i, session_item:SessionItem):
-            if session_item.status == 'complete' and session_item.anilist_id:
-                return
-
             availableEpisodes = session_item.availableEpisodes
-            if number_to_update and i+1>len(self.session_items)-number_to_update:
-                availableEpisodes = len(session_item.anime.retrieveEpisodes())
+
+            if (session_item.status != 'complete' or not session_item.anilist_id) and number_to_update and i+1>len(self.session_items)-number_to_update:
+                availableEpisodes = len(session_item.anime.retrieveEpisodes(supress=True)) or availableEpisodes or 1
 
             content[session_item.id] = {
                 'title': session_item.title,
@@ -204,6 +204,11 @@ class SessionManager():
         if verbose:
             pbar = ProgressBar(total=len(self.session_items), postfix=t('Animes atualizados'), leave=False)
 
+        # for i,session_item in enumerate(self.session_items):
+        #     updateSessionItem(i, session_item)
+        #     if pbar:
+        #         pbar.update(1)
+
         with ThreadPoolExecutor(max_workers=4) as executor:
             futures = [executor.submit(updateSessionItem,i, session_item) for i,session_item in enumerate(self.session_items)]
             for _ in as_completed(futures):
@@ -215,6 +220,7 @@ class SessionManager():
 
         with open(path.join(self.root,self.filename), 'w') as file:
             json.dump(content, file, indent=4)
+
 
     def select(self, hintText=t('Digite: '), maxListSize=5, width=100, query='') -> Union[SessionItem,str]:
 
@@ -239,7 +245,63 @@ class SessionManager():
         table_rows = [[str(len(self.session_items)-index),item.title, format_status(item)] for index,item in enumerate(self.session_items)]
 
         def myfilter(filter_name:str, items:List[List[str]], table:HighlightedTable):
-            table.clear()
+            Cursor.clearForward()
+            if filter_name == 'incomplete':
+                table.update(list(filter(lambda x: 'Completo' not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
+            elif filter_name == 'available':
+                table.update(list(filter(lambda x: bcolors['grey'] not in x[2] and bcolors['green'] not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
+            else:
+                table.update(items, message='filter: none', maxListSize=maxListSize)
+
+        results = interactiveTable(
+            table_rows,
+            ['' ,t("Sessoes anteriores"), t("Status")],
+            "ccc",
+            behaviour='singleWithText',
+            maxListSize=maxListSize,
+            width=width,
+            flexColumn=1,
+            highlightRange=(2,2),
+            hintText=hintText,
+            filters=['none', 'incomplete', 'available'],
+            filter_callback=myfilter
+        )
+
+        
+        if results.text:
+            if results.text.isdigit():
+                return self.session_items[len(self.session_items)-int(results.text)]
+            return results.text
+
+        if results.realSelectedPos is None:
+            raise Exception('Invalid position')
+
+        return self.session_items[results.realSelectedPos]
+
+    def multi_select(self, hintText=t('Digite: '), maxListSize=5, width=100, query='') -> Union[List[SessionItem],str]:
+
+        if query:
+            if query.isdigit() and int(query) <= len(self.session_items):
+                return [self.session_items[len(self.session_items)-int(query)]]
+            return query
+
+        def format_status(session_item:SessionItem) -> str:
+            status = t("Episodio {} [{}/{}]", session_item.lastEpisode, session_item.availableEpisodes, session_item.episodesInTotal)
+
+            if session_item.status == 'complete':
+                status = bcolors['green']+t("Completo")+bcolors['end']
+            elif session_item.status == 'insync':
+                status = bcolors['grey']+status+bcolors['end']
+
+            return status
+
+        if not self.session_items:
+            return str(input(hintText))
+
+        table_rows = [[str(len(self.session_items)-index),item.title, format_status(item)] for index,item in enumerate(self.session_items)]
+
+        def myfilter(filter_name:str, items:List[List[str]], table:HighlightedTable):
+            Cursor.clearForward()
             if filter_name == 'incomplete':
                 table.update(list(filter(lambda x: 'Completo' not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
             elif filter_name == 'available':
@@ -263,15 +325,17 @@ class SessionManager():
 
         
         if results.text:
-            if results.text.isdigit():
-                return self.session_items[len(self.session_items)-int(results.text)]
+            if results.text.isdigit() and int(results.text) <= len(self.session_items):
+                return [self.session_items[len(self.session_items)-int(results.text)]]
             return results.text
 
         if results.realSelectedPos is None:
             raise Exception('Invalid position')
 
-        return self.session_items[results.realSelectedPos]
-
+        if results.items is None:
+            return [self.session_items[results.realSelectedPos]]
+        else:
+            return list(map(lambda x: self.session_items[x],results.items.keys()))
 
 
 

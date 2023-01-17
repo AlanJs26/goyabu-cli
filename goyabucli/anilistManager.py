@@ -181,9 +181,15 @@ class AnilistManager():
         }
         '''
         result = self._request(query, variables)
-        result = result['data']['Page']['mediaList']
-
         watch_list: List[SessionItem] = []
+
+        try:
+            result = result['data']['Page']['mediaList']
+        except KeyError:
+            return watch_list
+        except TypeError:
+            return watch_list
+
 
 
         for item in result:
@@ -196,7 +202,8 @@ class AnilistManager():
                     item['progress'] or 1,
                     '',
                     anilist_id=media['id'],
-                    duration=media['duration']*60
+                    duration=media['duration']*60,
+                    watchTime=media['duration']*60
                 )
             )
 
@@ -246,6 +253,7 @@ class AnilistManager():
             if session.has_anime(watch_item.anime, anilist_id=watch_item.anilist_id):
                 intersecting_items.append(watch_item)
             else:
+                session.add_session_items([watch_item])
                 new_items.append(watch_item)
 
         if preferRemote:
@@ -253,7 +261,7 @@ class AnilistManager():
                 session.update(watch_item.anime, watch_item.lastEpisode, watch_item.watchTime, watch_item.duration, episodesInTotal=watch_item.episodesInTotal)
         else:
             for watch_item in intersecting_items:
-                session.update(watch_item.anime, episodesInTotal=watch_item.episodesInTotal)
+                session.update(watch_item.anime, episodesInTotal=watch_item.episodesInTotal, anilist_id=watch_item.anilist_id)
 
 
         session.add_session_items(new_items, inplace=True)

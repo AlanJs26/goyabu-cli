@@ -1,6 +1,6 @@
 from os import path,system,makedirs
 from time import sleep
-from typing import List, TypedDict
+from typing import List, TypedDict, Optional
 from .scraper import Episode
 from .dropdown import isWindows
 from .utils import headers
@@ -91,7 +91,7 @@ class PlayerManager():
 
         return {"lastEpisode": 1, "watchTime": 0, "duration": 0}
 
-    def generatePlaylistFile(self) -> str:
+    def generatePlaylistFile(self, playlist_basename:Optional[str]=None) -> str:
         fileText = '' 
         resolutionRanking = ['ultra-hd', 'full-hd', 'hd', 'sd']
 
@@ -109,7 +109,10 @@ class PlayerManager():
         if not fileText:
             return ''
 
-        file_path = path.join(self.playlist_folder, self.title+".m3u")
+        if not playlist_basename:
+            playlist_basename = self.title
+
+        file_path = path.join(self.playlist_folder, playlist_basename+".m3u")
 
         with open(file_path, 'w') as file:
             file.writelines(f'#EXTM3U\n\n{fileText}')
