@@ -6,7 +6,7 @@ import json
 from .anilistManager import AnilistManager, MissingToken, MissingUsername
 from .sessionManager import SessionManager
 from .scraperManager import SCRAPERS
-from .cli import mainTUI, configTUI, Config
+from .cli import mainTUI, configTUI, Config, serverTUI
 from .translation import t, warning
 
 def preferedScraperParser(string:str):
@@ -70,7 +70,7 @@ parser.add_argument('--config-dir',    action='store', default='~/.goyabucli',  
 
 args = parser.parse_args()
 
-# TODO -> implement on demand server TUI
+# DONE -> implement on demand server TUI
 # TODO -> add 'planning to watch' animes in main list as a filter
 # DONE -> implement scraper filter to anime selection
 # DONE -> implement configuration TUI
@@ -141,8 +141,8 @@ def main():
 
         print('Sincronização Completa')
 
-
-
+    elif args.server:
+        serverTUI(anilistManager, ' '.join(args.name), args.episodes, args.yes, args.scraper, config=config)
     else:
         mainTUI(anilistManager, ' '.join(args.name), args.episodes, args.yes, args.scraper, config=config)
 

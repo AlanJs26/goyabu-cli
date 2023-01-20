@@ -20,11 +20,13 @@ class ScraperManager():
         if preferedScrapers:
             scrapers = [scraper for scraper in self.scrapers if scraper.name in preferedScrapers]
 
+        new_animes = []
         for scraper in scrapers:
             for anime in scraper.search(query):
+                new_animes.append(anime)
                 self._addAnime(anime)
 
-        return list(self.animes.values())
+        return new_animes
 
     def searchLocal(self, query:str) -> List[Anime]:
         return [Anime('title', 'anime1')]

@@ -1,4 +1,6 @@
 from goyabucli.anilistManager import AnilistManager
+from goyabucli.scraper import Anime
+from goyabucli.serverManager import ServerManager
 from .scraperManager import ScraperManager
 from .anilistManager import AnilistManager, MissingToken
 from .sessionManager import SessionManager, SessionItem
@@ -292,7 +294,7 @@ def serverTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_ra
     sessionmanager = SessionManager(scrapers=manager.scrapers, root=config.config_dir)
 
 
-    selected_animes = []
+    selected_items:List[SessionItem] = []
 
     while True:
         selected_item = sessionmanager.multi_select(query=default_anime_name, maxListSize=10)
@@ -325,9 +327,12 @@ def serverTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_ra
                     print(results)
                     exit()
 
-                selected_animes.append(animes[results.selectedPos])
+                new_session_item = SessionItem(animes[results.selectedPos], 0, 0, 1, '')
+
+                selected_items.append(new_session_item)
             else:
-                selected_animes.append(animes[0])
+                new_session_item = SessionItem(animes[0], 0, 0, 1, '')
+                selected_items.append(new_session_item)
 
             selected = interactiveTable(
                 [
@@ -338,8 +343,8 @@ def serverTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_ra
                 "cl",
                 highlightRange=(0,1),
                 staticHighlights=[
-                    Highlight(0, 'green'),
-                    Highlight(1, 'fail'),
+                    Highlight(0, 'fail'),
+                    Highlight(1, 'green'),
                 ],
             )
             if not selected.selectedItem:
@@ -348,30 +353,31 @@ def serverTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_ra
             if selected.selectedItem[1] == 'Não':
                 break
         else:
-            selected_animes.extend(map(lambda x: x.anime, selected_item))
+            selected_items.extend(selected_item)
+            print(selected_items)
             break
 
 
 
     tt.print(
-        list(map(lambda x: [x.title], selected_animes)),
+        list(map(lambda x: [x.title], selected_items)),
         header=[t("Animes Selecionados")],
         style=tt.styles.rounded,
         alignment="c",
     )
 
 
-    for selected_anime in selected_animes:
-        session_anime = sessionmanager.find(selected_anime)
+    for selected_item in selected_items:
+        session_anime = sessionmanager.find(selected_item.anime, selected_item.anilist_id)
 
         if session_anime:
             continue
 
-        if len(selected_anime.availableScrapers) > 1:
+        if len(selected_item.anime.availableScrapers) > 1:
             if not always_yes:
                 results = interactiveTable(
-                    items=[['',scraperName] for scraperName in selected_anime.availableScrapers],
-                    header=['',t('Escolha uma fonte')],
+                    items=[['',scraperName] for scraperName in selected_item.anime.availableScrapers],
+                    header=['',t('Escolha uma fonte')+f" ({selected_item.title})"],
                     alignment='ll',
                     behaviour='single',
                     maxListSize=10,
@@ -383,33 +389,30 @@ def serverTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_ra
                 if results.selectedItem is None:
                     raise Exception(t('Não foi possível selecionar uma fonte'))
 
-                selected_anime.source = results.selectedItem[1]
+                selected_item.anime.source = results.selectedItem[1]
             else:
-                selected_anime.source = selected_anime.availableScrapers[0]
+                selected_item.anime.source = selected_item.anime.availableScrapers[0]
 
-    # TODO -> create a serverManager class that receive a list of SessionItem and serve a m3u file, in a way that every entry point to the server who returns the correct link on demand
+            selected_item.lastSource = selected_item.anime.source
 
+    server_manager = ServerManager(selected_items)
 
-    #     sessionmanager.add([anime])
-    #
-    # # sessionmanager.update(anime, results['lastEpisode'], results['watchTime'], results['duration'])
-    #
-    # try:
-    #     anilistManager.merge_session(sessionmanager)
-    # except MissingToken:
-    #     if not config.silent:
-    #         warning("wasn't possible sync with anilist. Missing authentification token")
-    #         warning("to get rid of this message, mark the option 'silent' to True in the config")
-    #         warning("    eg: anime --config")
-    #
-    # print(t('Atualizando o histórico...'))
-    # # anilistManager.update_session(sessionmanager, True)
-    # sessionmanager.dump(verbose=True, number_to_update=10)
-    #
-    # anime_session_item = sessionmanager.find(anime)
-    #
-    # if anime_session_item:
-    #     anilistManager.set_watching([anime_session_item])
+    new_items = server_manager.serve()
 
+    sessionmanager.add_session_items(new_items)
+
+    try:
+        anilistManager.merge_session(sessionmanager)
+    except MissingToken:
+        if not config.silent:
+            warning("wasn't possible sync with anilist. Missing authentification token")
+            warning("to get rid of this message, mark the option 'silent' to True in the config")
+            warning("    eg: anime --config")
+
+    print(t('Atualizando o histórico...'))
+    anilistManager.update_session(sessionmanager, True)
+    sessionmanager.dump(verbose=True, number_to_update=10)
+
+    anilistManager.set_watching(new_items)
 
 

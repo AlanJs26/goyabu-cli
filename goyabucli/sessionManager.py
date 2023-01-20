@@ -82,6 +82,11 @@ class SessionManager():
             
 
     def find(self, anime:Anime, anilist_id:Optional[int]=None) -> Union[SessionItem,None]:
+        foundItem = next((item for item in self.session_items if item.anime == anime),None)
+
+        if foundItem:
+            return foundItem
+
         for session_item in self.session_items:
             if session_item.id == anime.id or (anilist_id and (session_item.anilist_id == anilist_id)):
                 return session_item
