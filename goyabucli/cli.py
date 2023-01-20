@@ -354,7 +354,6 @@ def serverTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_ra
                 break
         else:
             selected_items.extend(selected_item)
-            print(selected_items)
             break
 
 
