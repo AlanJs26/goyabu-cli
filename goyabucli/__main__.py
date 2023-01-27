@@ -54,17 +54,17 @@ parser.add_argument('-y','--yes',    action='store_true',
 parser.add_argument('--episodes',    action='store', default={'start':0, 'end':0},    type=range_parser, metavar='RANGE',
                     help='range of episodes to watch. Ex: an range of 1:5 will play all the episodes from one to five')
 parser.add_argument('--player',      action='store', default='mpv', type=str,
-                    help='player to run the anime\n         mpv  - use MPV player(default)\n         none - run as server\n         xxxx - use any other player, example: mplayer')
+                    help='player to run the anime\n         mpv  - use MPV player(default)\n         xxxx - use any other player, example: mplayer')
 parser.add_argument('--scraper',      action='store', default=[], type=preferedScraperParser,
                     help='give priority to given scraper when using --yes argument.')
 parser.add_argument('--update',      action='store_true',         
                     help='fetch the latest information for the animes in history')
 parser.add_argument('--server',      action='store_true',         
-                    help='serves a list of animes as a m3u playlist through the network. Use colons (,) to split each anime')
+                    help='serves a list of animes as a m3u playlist through the network.')
 parser.add_argument('--anilist_sync', '--sync',      choices=['prefer_local', 'prefer_remote', 'replace_local', 'replace_remote'],         
-                    help='sync with anilist')
+                    help='sync with anilist\n    --prefer_local      fetch the anilist watchlist but prefer the local list on conflict\n    --prefer_remote     fetch the anilist watchlist but prefer the remote list on conflict\n    --replace_local     replace the local list with the remote\n    --replace_remote    replace the remote list with the local')
 parser.add_argument('--config',      action='store_true',         
-                    help='change config using the cli')
+                    help='change config')
 parser.add_argument('--config-dir',    action='store', default='~/.goyabucli',    type=dir_path, metavar='config directory',
                     help='directory for the watch list')
 
@@ -107,7 +107,7 @@ def main():
         anilistManager.update_session(sessionmanager, True)
         sessionmanager.dump(verbose=True, number_to_update=history_size)
 
-        print('O total de episódios dos animes do histórico foram sincronizados')
+        print(t('O total de episódios dos animes do histórico foram sincronizados'))
     elif args.config:
         configTUI(config, anilistManager)
     elif args.anilist_sync:
@@ -139,7 +139,7 @@ def main():
                 warning("    eg: anime --config")
                 exit()
 
-        print('Sincronização Completa')
+        print(t('Sincronização Completa'))
 
     elif args.server:
         serverTUI(anilistManager, ' '.join(args.name), args.episodes, args.yes, args.scraper, config=config)

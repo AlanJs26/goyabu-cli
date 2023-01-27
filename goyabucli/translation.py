@@ -66,6 +66,9 @@ translation = {
     "Não foi possível gerar o arquivo m3u": {
         'en': "Wasn't possible generate the m3u file",
     },
+    "O total de episódios dos animes do histórico foram sincronizados": {
+        'en': "All animes in the watchlist have been synced",
+    },
 }
 
 lang = 'en'

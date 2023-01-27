@@ -1,5 +1,4 @@
 from goyabucli.anilistManager import AnilistManager
-from goyabucli.scraper import Anime
 from goyabucli.serverManager import ServerManager
 from .scraperManager import ScraperManager
 from .anilistManager import AnilistManager, MissingToken
@@ -184,7 +183,7 @@ def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_rang
             start_pos = ep_ids.index(last_watch_pos-1)
 
             # jump to next episode if user stopped at the end of the episode of the previous session
-            if session_anime.status == 'insync':
+            if session_anime.status == 'ongoing' and session_anime.currentEpisodedEnded():
                 start_pos += 1
                 seek_time = 0
 
@@ -207,13 +206,15 @@ def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_rang
             warning("    eg: anime --config")
 
     print(t('Atualizando o histórico...'))
-    # anilistManager.update_session(sessionmanager, True)
-    sessionmanager.dump(verbose=True, number_to_update=10)
 
     anime_session_item = sessionmanager.find(anime)
 
     if anime_session_item:
+        anilistManager.updateSessionItem(anime_session_item)
         anilistManager.set_watching([anime_session_item])
+
+    # anilistManager.update_session(sessionmanager, True)
+    sessionmanager.dump(verbose=True, number_to_update=10)
 
 
 
@@ -398,20 +399,20 @@ def serverTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_ra
 
     new_items = server_manager.serve()
 
-    sessionmanager.add_session_items(new_items)
-
-    try:
-        anilistManager.merge_session(sessionmanager)
-    except MissingToken:
-        if not config.silent:
-            warning("wasn't possible sync with anilist. Missing authentification token")
-            warning("to get rid of this message, mark the option 'silent' to True in the config")
-            warning("    eg: anime --config")
-
-    print(t('Atualizando o histórico...'))
-    anilistManager.update_session(sessionmanager, True)
-    sessionmanager.dump(verbose=True, number_to_update=10)
-
-    anilistManager.set_watching(new_items)
+    # sessionmanager.add_session_items(new_items)
+    #
+    # try:
+    #     anilistManager.merge_session(sessionmanager)
+    # except MissingToken:
+    #     if not config.silent:
+    #         warning("wasn't possible sync with anilist. Missing authentification token")
+    #         warning("to get rid of this message, mark the option 'silent' to True in the config")
+    #         warning("    eg: anime --config")
+    #
+    # print(t('Atualizando o histórico...'))
+    # anilistManager.update_session(sessionmanager, True)
+    # sessionmanager.dump(verbose=True, number_to_update=10)
+    #
+    # anilistManager.set_watching(new_items)
 
 

@@ -5,7 +5,7 @@ from ..extractors.blogger import BloggerExtractor
 from typing import List
 
 import requests
-from lxml.html import fromstring
+from parsel import Selector
 
 class AnimeFire(Scraper):
     def __init__(self):
@@ -57,17 +57,18 @@ class AnimeFire(Scraper):
     def search(self, query:str) -> List[Anime]:
 
         html = requests.get(f'https://animefire.net/pesquisar/{query.replace(" ", "-")}', headers=headers).text
-        dom = fromstring(html)
+        dom = Selector(html)
 
-        imgs = dom.xpath('//*[@id="body-content"]/div[2]/div/div/div/div/article/a/div[1]/h3')
+        imgs = dom.xpath('//*[@id="body-content"]/div[2]/div/div/div/div/article/a')
 
         animes = []
         for item in imgs:
+            h3 = item.css('h3::text')[0]
             animes.append(
-                Anime(item.text,
-                      animeTitle2Id(item.text),
+                Anime(h3.get(),
+                      animeTitle2Id(h3.get()),
                       source=self.name,
-                      pageUrl=item.getparent().getparent().get('href')
+                      pageUrl=item.attrib['href']
                       )
             )
         return animes
@@ -75,17 +76,19 @@ class AnimeFire(Scraper):
     def episodes(self, animePageUrl) -> List[Episode]:
 
         html = requests.get(animePageUrl, headers=headers).text
-        dom = fromstring(html)
+        dom = Selector(html)
 
         epnames = dom.xpath('//*[@id="body-content"]/div[1]/div/div[2]/section/div[2]/a')
+        epnames_text = dom.xpath('//*[@id="body-content"]/div[1]/div/div[2]/section/div[2]/a/text()')
 
         episodes = []
         index = 0
-        for item in epnames:
+        for item,item_text in zip(epnames, epnames_text):
             index+=1
-            ep = Episode(item.text, str(index))
 
-            url = VideoUrl(item.get('href'),'sd','pt',self.name)
+            ep = Episode(item_text.get(), str(index))
+
+            url = VideoUrl(item.attrib['href'],'sd','pt',self.name)
             ep.addSource(self.name, [url])
 
             episodes.append(ep)

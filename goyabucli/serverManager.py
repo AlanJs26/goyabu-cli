@@ -4,6 +4,8 @@ from typing import List
 import socket
 
 from goyabucli.sessionManager import SessionItem
+from goyabucli.translation import error
+from goyabucli.utils import headers
 
 
 class ServerManager():
@@ -26,6 +28,8 @@ class ServerManager():
 
             for episode in sessionItem.anime.retrieveEpisodes(supress=True):
                 fileText+=f'#EXTINF:-1,Ep {episode.id} - {sessionItem.title}\n'
+                fileText+=f'#EXTVLCOPT:http-user-agent={headers["User-Agent"]}\n'
+
                 fileText+=f'http://{self.ip}:{self.port}/?q={quote(sessionItem.id)}&e={episode.index}\n\n'
         return fileText
     
@@ -51,29 +55,31 @@ class ServerManager():
                     self.wfile.write(bytes(playlistText, "utf8"))
                
                 elif '?q=' in self.path or '&q=' in self.path:
-                    # try:
-                    parameters = parse_qs(self.path[2:])
-                    q = parameters['q'][0]
-                    e = int(parameters['e'][0])
+                    try:
+                        parameters = parse_qs(self.path[2:])
+                        q = parameters['q'][0]
+                        e = int(parameters['e'][0])
 
-                    foundItem = next(item for item in sessionItems if quote(item.id) == quote(q))
+                        foundItem = next(item for item in sessionItems if quote(item.id) == quote(q))
 
-                    if len(foundItem.anime.episodes):
-                        episodes = list(foundItem.anime.episodes.values())
-                    else:
-                        episodes = foundItem.anime.retrieveEpisodes()
+                        if len(foundItem.anime.episodes):
+                            episodes = list(foundItem.anime.episodes.values())
+                        else:
+                            episodes = foundItem.anime.retrieveEpisodes()
 
-                    episodes[e].retrieveLinks(foundItem.anime.source)
+                        episodes[e].retrieveLinks(foundItem.anime.source)
 
-                    links = episodes[e].getLinksBySource(foundItem.anime.source)
-                    
-                    foundItem.lastEpisode = e+1
+                        links = episodes[e].getLinksBySource(foundItem.anime.source)
+                        
+                        foundItem.lastEpisode = e+1
 
-                    self.send_response(302)
-                    self.send_header("Location", links[0].url)
-                    self.end_headers()
-                    # except Exception:
-                    #     self.send_response(404)
+                        location = links[0].url
+                        self.send_response(302)
+                        self.send_header("Location", location)
+                        self.end_headers()
+                    except Exception as e:
+                        error(str(e))
+                        self.send_response(404)
         return _server
 
 

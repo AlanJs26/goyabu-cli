@@ -4,8 +4,8 @@ from goyabucli.utils import animeTitle2Id, headers
 from typing import List
 
 import requests
-from lxml.html import fromstring
 import re
+from parsel import Selector
 
 class Goyabu(Scraper):
     def __init__(self):
@@ -34,32 +34,38 @@ class Goyabu(Scraper):
 
     def search(self, query:str) -> List[Anime]:
         html = requests.get(f'https://goyabu.com/?s={query.replace(" ","+")}', headers=headers).text
-        dom = fromstring(html)
+        dom = Selector(html)
 
-        a_link = dom.xpath('//*[@id="main"]/div/div[1]/div/div/a')
+        a_link = dom.xpath('//*[@id="main"]/div/div[1]/div/div')
 
         animes = []
         for item in a_link:
+            a = item.css('a')[0]
+            h3 = item.xpath('h3/text()')[0]
+
             animes.append(
-                Anime(item.getnext().text,
-                      animeTitle2Id(item.getnext().text),
+                Anime(h3.get(),
+                      animeTitle2Id(h3.get()),
                       source=self.name,
-                      pageUrl=item.get('href')
+                      pageUrl=a.attrib['href']
                       )
             )
         return animes
 
     def episodes(self, animePageUrl) -> List[Episode]:
         html = requests.get(animePageUrl, headers=headers).text
-        dom = fromstring(html)
+        dom = Selector(html)
 
-        epnames = dom.xpath('//*[@id="main"]/div[1]/div/div[2]/div/div/a/div[2]')
+        epnames = dom.xpath('//*[@id="main"]/div[1]/div[1]/div[2]/div/div/div[@class="anime-episode"]')
 
         episodes = []
         for index,item in enumerate(epnames):
-            ep = Episode(item.text, str(index+1))
+            a = item.css('a')[0]
+            h3 = item.xpath('h3/text()')[0]
 
-            url = VideoUrl(item.getparent().get('href'),'sd','pt',self.name)
+            ep = Episode(h3.get(), str(len(epnames)-index))
+
+            url = VideoUrl(a.attrib['href'],'sd','pt',self.name)
             ep.addSource(self.name, [url])
 
             episodes.append(ep)

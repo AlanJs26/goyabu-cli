@@ -107,20 +107,19 @@ class AnilistManager():
 
         return 0
 
+    def updateSessionItem(self, session_item:SessionItem):
+        if not session_item.anilist_id:
+            foundAnime = self.search(session_item.title)
+            if foundAnime:
+                session_item.anilist_id = foundAnime.anilist_id
+                session_item.episodesInTotal = foundAnime.episodesInTotal
+                return
+
+        episodesInTotal = self.getTotalEpisodesCount(title=session_item.title, id=session_item.anilist_id)
+
+        session_item.episodesInTotal = episodesInTotal or session_item.episodesInTotal or session_item.availableEpisodes
+
     def update_session(self, session:SessionManager, verbose=False):
-
-        def updateSessionItem(session_item:SessionItem):
-            if not session_item.anilist_id:
-                foundAnime = self.search(session_item.title)
-                if foundAnime:
-                    session_item.anilist_id = foundAnime.anilist_id
-                    session_item.episodesInTotal = foundAnime.episodesInTotal
-                    return
-
-            episodesInTotal = self.getTotalEpisodesCount(title=session_item.title, id=session_item.anilist_id)
-
-            session_item.episodesInTotal = episodesInTotal or session_item.episodesInTotal or session_item.availableEpisodes
-
 
         watch_list = self.get_watching()
 
@@ -148,7 +147,7 @@ class AnilistManager():
             pbar = ProgressBar(total=len(session.session_items), postfix='Sincronizando com Anilist', leave=False)
 
         with ThreadPoolExecutor(max_workers=4) as executor:
-            futures = [executor.submit(updateSessionItem, session_item) for session_item in new_items]
+            futures = [executor.submit(self.updateSessionItem, session_item) for session_item in new_items]
             for _ in as_completed(futures):
                 if pbar:
                     pbar.update(1)

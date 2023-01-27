@@ -13,7 +13,7 @@ class SessionItem():
         self.anime = anime
 
         self.date_utc = datetime.fromtimestamp(date_utc,timezone.utc)
-        self.episodesInTotal = episodesInTotal or availableEpisodes
+        self.episodesInTotal = episodesInTotal or availableEpisodes or 0
         self.availableEpisodes = availableEpisodes
         self.watchTime = watchTime
         self.lastEpisode = lastEpisode
@@ -31,12 +31,17 @@ class SessionItem():
 
     @property
     def status(self):
-        if self.lastEpisode >= self.episodesInTotal and self.watchTime > self.duration*0.92:
+        if self.lastEpisode >= self.episodesInTotal and self.currentEpisodedEnded():
             return 'complete'
-        if self.lastEpisode == self.availableEpisodes and self.watchTime >= self.duration*0.9:
+        if self.lastEpisode == self.availableEpisodes and self.currentEpisodedEnded():
             return 'insync'
         else:
             return 'ongoing'
+
+    def currentEpisodedEnded(self):
+        if self.watchTime >= self.duration*0.9:
+            return True
+        return False
 
     def __repr__(self):
         return f'''<SessionItem
@@ -252,7 +257,7 @@ class SessionManager():
         def myfilter(filter_name:str, items:List[List[str]], table:HighlightedTable):
             Cursor.clearForward()
             if filter_name == 'incomplete':
-                table.update(list(filter(lambda x: 'Completo' not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
+                table.update(list(filter(lambda x: t('Completo') not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
             elif filter_name == 'available':
                 table.update(list(filter(lambda x: bcolors['grey'] not in x[2] and bcolors['green'] not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
             else:
@@ -308,7 +313,7 @@ class SessionManager():
         def myfilter(filter_name:str, items:List[List[str]], table:HighlightedTable):
             Cursor.clearForward()
             if filter_name == 'incomplete':
-                table.update(list(filter(lambda x: 'Completo' not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
+                table.update(list(filter(lambda x: t('Completo') not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
             elif filter_name == 'available':
                 table.update(list(filter(lambda x: bcolors['grey'] not in x[2] and bcolors['green'] not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
             else:

@@ -129,6 +129,7 @@ class HighlightedTable:
                width:Optional[int]=None,
                message:Optional[str]=None):
 
+        self.real_items = items
         self.items = deepcopy(items)
         if flexColumn is not None:
             self.flexColumn = flexColumn
@@ -407,10 +408,10 @@ def interactiveTable(
             else:
                 currentFilterIndex = (currentFilterIndex-1)%len(filters)
 
-            selectedItem = table.items[highlightPos] if highlightPos<len(table.items) else None
+            selectedItem = table.real_items[highlightPos] if highlightPos<len(table.items) else None
             filter_callback(filters[currentFilterIndex], items, table)
 
-            realSelectedPos = table.items.index(selectedItem) if selectedItem in table.items else None
+            realSelectedPos = table.real_items.index(selectedItem) if selectedItem in table.items else None
 
             if realSelectedPos is not None:
                 highlightPos = realSelectedPos
@@ -493,8 +494,8 @@ def interactiveTable(
     if shouldQuit:
         os._exit(0)
 
-    selectedItems = {items.index(table.items[item.pos]): table.items[item.pos] for item in highlights if item.color == 'fail'}
-    selectedItem = table.items[highlightPos] if highlightPos<len(table.items) else None
+    selectedItems = {items.index(table.real_items[item.pos]): table.real_items[item.pos] for item in highlights if item.color == 'fail'}
+    selectedItem = table.real_items[highlightPos] if highlightPos<len(table.items) else None
 
     return TableResults(
         selectedPos     = highlightPos if highlightPos < len(table.items) else None,

@@ -58,23 +58,25 @@ class Episode():
         return videoUrls
 
     def retrieveLinks(self, scraperName:str):
-        right_scraper = next((source[1] for source in self.sources if source[0] == scraperName),None)
+        links = next((source[1] for source in self.sources if source[0] == scraperName),None)
 
         if not self.scrapers:
             raise LookupError(f"Cannot access scrapers in episode {self.title}")
 
-        if right_scraper == None:
+        if links == None:
             raise LookupError(f"Cannot find matching source for '{scraperName}' in episode {self.title}")
 
         found_links = []
-        for source in right_scraper:
+        for source in links:
+            if source.ready:
+                continue
             found_links.extend(source.getLink())
 
-        right_scraper.extend(found_links)
+        links.extend(found_links)
 
-        for source in right_scraper.copy():
+        for source in links.copy():
             if not source.ready or not source.test():
-                right_scraper.remove(source)
+                links.remove(source)
 
 
 
