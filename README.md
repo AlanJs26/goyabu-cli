@@ -32,7 +32,13 @@ pip install goyabu-cli
 
 <!--Com isso digitando `anime` no terminal, o programa deve funcionar-->
 
-To run the program type `anime` in the terminal
+To run the program type `anime` in the terminal.
+
+```bash
+# run the bellow command to update the program
+pip install --upgrade goyabu-cli
+```
+
 
 <!--## Instalação manual-->
 ## ⚙ Manual installation
@@ -58,6 +64,7 @@ To run the program, type `python runner.py` in the program folder or add to your
 | ----------------------------------------------------- | ------------------------------------------------------------------ | ---------- | ------------------ |
 | [animefire](https://animefire.com/)             | website used to watch anime                                        | Portuguese |                    |
 | [goyabu](https://goyabu.com/)             | website used to watch anime                                        | Portuguese |                    |
+| [gogoanime](https://gogoanime.dk/)             | website used to watch anime                                        | English |                    |
 
 ## Language
 
@@ -97,9 +104,17 @@ All available arguments are listed below:
 > -  `--player` specify the player do you want to use (default: mpv)
 > -  `--scraper` use specified scraper to fetch the episodes
 > -  `--update` fetch the number of total episodes of the items in history.
+> -  `--server` serves a list of animes as a m3u playlist through the network.
+> -  `--config` change the default config.
+> -  `--anilist_sync` sync your local history with anilist
 > -  `--yes` accept all default options. it is useful then you already know the full name of the anime/series
 > -  `--config-dir` specify the folder to save the playlist file
 
+for more information run `anime --help`
+
+### Anilist
+
+to enable anilist sync,to enable synchronization with anilist, you must first run the command `anime --config` and select the field 'token'. This will open a browser window asking for confirmation. 
 
 
 ### MPV
