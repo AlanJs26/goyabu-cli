@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List,Tuple,Set,Dict
 from lxml.etree import iselement
+from goyabucli.utils import headers
 
 class VideoUrl():
     def __init__(self, url:str, quality:str, lang:str, source:str, scrapers:List['Scraper']=[], ready=False):
@@ -9,6 +10,7 @@ class VideoUrl():
         self.source = source
         self.ready = ready
         self.lang = lang
+        self.headers = headers
         self.quality = quality # sd,hd,full-hd,ultra-hd
 
     def getLink(self) -> List['VideoUrl']:

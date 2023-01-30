@@ -1,15 +1,15 @@
 from typing import List, Dict
 from .scraper import Scraper,Anime,bindScrapers
-from .scrapers.goyabuNew import Goyabu
+from .scrapers.goyabu import Goyabu
 from .scrapers.animefire import AnimeFire
-from .scrapers.anime123 import Anime123
+from .scrapers.gogoanime import Gogoanime
 
-SCRAPERS:List[Scraper] = [AnimeFire(), Goyabu()]
-# SCRAPERS:List[Scraper] = [Anime123()]
+SCRAPERS:List[Scraper] = [AnimeFire(), Goyabu(), Gogoanime()]
 
 class ScraperManager():
     def __init__(self):
         self.scrapers = SCRAPERS
+
         self.animes:Dict[str,Anime] = {
             # 'id1' : Anime('title', 'anime1')
         }

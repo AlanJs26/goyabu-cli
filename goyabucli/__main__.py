@@ -96,6 +96,8 @@ def main():
                 config.player = content['player']
             if 'silent' in content:
                 config.silent = content['silent']
+            if 'lang' in content:
+                config.lang = content['lang']
                 
     anilistManager = AnilistManager(config.anilist_username, config.token, scrapers=SCRAPERS, silent=config.silent)
 

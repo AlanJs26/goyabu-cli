@@ -5,7 +5,7 @@ from .anilistManager import AnilistManager, MissingToken
 from .sessionManager import SessionManager, SessionItem
 from .playerManager import PlayerManager
 from .dropdown import Cursor, Highlight, interactiveTable
-from .translation import t, error, warning
+from .translation import t, error, warning, lang
 from .progress import progress
 import termtables as tt
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -22,9 +22,12 @@ class Config:
     config_dir:str
     player:str
     silent:bool
+    lang:str = lang
 
 def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_range:Dict[str,Union[None,int]], always_yes:bool, default_scraper:List[str], config=Config('','','','', False)):
     manager = ScraperManager()
+    manager.scrapers = list(filter(lambda x: config.lang in x.lang, manager.scrapers))
+
     sessionmanager = SessionManager(scrapers=manager.scrapers, root=config.config_dir)
 
     selected_item = sessionmanager.select(query=default_anime_name, maxListSize=10)
@@ -228,6 +231,7 @@ def configTUI(config: Config, anilistManager:AnilistManager):
             'Config directory': config.config_dir,
             'Player': config.player,
             'Silent': config.silent,
+            'Language': config.lang,
         }
         rows = [ [key, value] for key,value in  config_dict.items() ]
 
@@ -237,7 +241,8 @@ def configTUI(config: Config, anilistManager:AnilistManager):
             "cc",
             highlightRange=(0,2),
             staticHighlights=[Highlight(0, 'green' if config.token else 'fail')],
-            flexColumn=2
+            flexColumn=2,
+            maxListSize=len(config_dict)
         )
 
         if not results.selectedItem:
@@ -261,6 +266,8 @@ def configTUI(config: Config, anilistManager:AnilistManager):
             change_field('config_dir')
         elif results.selectedItem[0] == 'Player':
             change_field('player')
+        elif results.selectedItem[0] == 'Language':
+            change_field('lang')
         elif results.selectedItem[0] == 'Silent':
 
             selected = interactiveTable(
@@ -292,6 +299,8 @@ def configTUI(config: Config, anilistManager:AnilistManager):
 
 def serverTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_range:Dict[str,Union[None,int]], always_yes:bool, default_scraper:List[str], config=Config('','','','', False)):
     manager = ScraperManager()
+    manager.scrapers = list(filter(lambda x: lang in x.lang, manager.scrapers))
+
     sessionmanager = SessionManager(scrapers=manager.scrapers, root=config.config_dir)
 
 
@@ -399,20 +408,20 @@ def serverTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_ra
 
     new_items = server_manager.serve()
 
-    # sessionmanager.add_session_items(new_items)
-    #
-    # try:
-    #     anilistManager.merge_session(sessionmanager)
-    # except MissingToken:
-    #     if not config.silent:
-    #         warning("wasn't possible sync with anilist. Missing authentification token")
-    #         warning("to get rid of this message, mark the option 'silent' to True in the config")
-    #         warning("    eg: anime --config")
-    #
-    # print(t('Atualizando o histórico...'))
-    # anilistManager.update_session(sessionmanager, True)
-    # sessionmanager.dump(verbose=True, number_to_update=10)
-    #
-    # anilistManager.set_watching(new_items)
+    sessionmanager.add_session_items(new_items)
+
+    try:
+        anilistManager.merge_session(sessionmanager)
+    except MissingToken:
+        if not config.silent:
+            warning("wasn't possible sync with anilist. Missing authentification token")
+            warning("to get rid of this message, mark the option 'silent' to True in the config")
+            warning("    eg: anime --config")
+
+    print(t('Atualizando o histórico...'))
+    anilistManager.update_session(sessionmanager, True)
+    sessionmanager.dump(verbose=True, number_to_update=10)
+
+    anilistManager.set_watching(new_items)
 
 
