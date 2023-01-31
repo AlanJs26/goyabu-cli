@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import List,Tuple,Set,Dict
-from lxml.etree import iselement
 from goyabucli.utils import headers
 
 class VideoUrl():
@@ -189,12 +188,4 @@ class Scraper(ABC):
     @abstractmethod
     def episodes(self, animePageUrl) -> List[Episode]:
         raise NotImplementedError(f"episodes not implemented for '{self.name}'")
-
-    def is_element_valid(self, element):
-        if isinstance(element, list) and iselement(element[0]) and element[0]:
-            return True
-        return False
-
-
-
 
