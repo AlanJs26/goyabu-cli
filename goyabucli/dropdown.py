@@ -6,7 +6,7 @@ from math import floor
 from functools import reduce
 from typing import List,Callable,Optional,cast,Union,Dict,Tuple
 from dataclasses import dataclass
-from goyabucli.utils import nameTrunc
+from .utils import nameTrunc
 
 isWindows = sys.platform == 'win32'
 
@@ -111,12 +111,12 @@ class Highlight:
 
 
 class HighlightedTable:
-    def __init__(self, items:list, header:list, highlights:List[Highlight], alignment="rc", highlightRange=(1,1), maxListSize=5, flexColumn=0, width=0, message=''):
+    def __init__(self, items:list, header:list, highlights:List[Highlight], alignment="rc", highlightRange=(1,1), maxListSize=5, flexColumn=0, size_offset=0, message=''):
         self.highlightRange=highlightRange
         self.maxListSize=maxListSize
         self.highlights=[]
 
-        self.update(items,header,highlights,alignment,highlightRange,maxListSize,flexColumn,width, message)
+        self.update(items,header,highlights,alignment,highlightRange,maxListSize,flexColumn,size_offset, message)
 
     def update(self,
                items:List[List[str]],
@@ -126,7 +126,7 @@ class HighlightedTable:
                highlightRange:Optional[Tuple[int, int]]=None,
                maxListSize:Optional[int]=None,
                flexColumn:Optional[int]=None,
-               width:Optional[int]=None,
+               size_offset:Optional[int]=None,
                message:Optional[str]=None):
 
         self.real_items = items
@@ -137,8 +137,8 @@ class HighlightedTable:
             self.alignment = alignment
         if header is not None:
             self.header = header
-        if width is not None:
-            self.width = width
+        if size_offset is not None:
+            self.size_offset = size_offset
         if message is not None:
             self.message = message
         if highlightRange is not None:
@@ -149,12 +149,11 @@ class HighlightedTable:
             self.maxListSize = maxListSize
 
 
-        if self.width>0:
-            if self.flexColumn < 0 or self.flexColumn >= len(self.header):
-                raise Exception('Invalid self.flexColumn: must be a valid column index')
-            for item in self.items:
-                linelength = reduce(lambda p,n:len(n)+p, item, 0)
-                item[self.flexColumn] = nameTrunc(item[self.flexColumn], linelength+18)
+        if self.flexColumn < 0 or self.flexColumn >= len(self.header):
+            raise Exception('Invalid self.flexColumn: must be a valid column index')
+        for item in self.items:
+            linelength = reduce(lambda p,n:len(n)+p, item, 0)
+            item[self.flexColumn] = nameTrunc(item[self.flexColumn], length=linelength+18, offset=self.size_offset)
         table = tt.to_string(
             self.items,
             header=self.header,
@@ -168,7 +167,7 @@ class HighlightedTable:
         self.tableFooter = table.split('\n')[-1]
 
 
-    def display(self, highlights:List[Highlight]=[], upOffset=0, scrollAmount=0):
+    def display(self, highlights:List[Highlight]=[], scrollAmount=0):
         if(not highlights): highlights=self.highlights
 
         if self.maxListSize > len(self.tableLines):
@@ -222,7 +221,7 @@ class HighlightedTable:
             message = self.message.split('\n') 
 
             for item in message:
-                sys.stdout.write(f"\033[{len(self.tableLines[0])+2}C")
+                sys.stdout.write(f"\033[{len(self.tableFooter)+2}C")
                 print(item)
             Cursor.up(len(message)+2)
 
@@ -342,14 +341,14 @@ class TableResults:
     items: Union[Dict[int, list],None]
 
 
-FilterCallback = Callable[[str,List[List[str]], HighlightedTable], None]
+FilterCallback = Callable[[str,List[List[str]]], Tuple[List[List[str]],str]]
 
 
 def interactiveTable(
     items:List[List[str]], header:list, alignment="rc", keyCallback:Optional[KeyCallback]=singleselectionTable,
         clipPos=True, behaviour="single", hintText='Digite: ',
         maxListSize=5, staticHighlights:List[Highlight]=[], highlightRange=(1,1),
-    width=0, flexColumn=0, filters:List[str]=[], filter_callback:Optional[FilterCallback]=None) -> TableResults:
+    size_offset=0, flexColumn=0, filters:List[str]=[], filter_callback:Optional[FilterCallback]=None) -> TableResults:
 
     if len(header) <= 1:
         raise Exception('the number of columns must be greater than 1')
@@ -378,7 +377,7 @@ def interactiveTable(
 
     highlights : List[Highlight] = [selectedStyle(highlightPos)]
 
-    table = HighlightedTable(items, header, highlights, alignment, highlightRange=highlightRange, maxListSize=maxListSize, width=width,flexColumn=flexColumn)
+    table = HighlightedTable(items, header, highlights, alignment, highlightRange=highlightRange, maxListSize=maxListSize, size_offset=size_offset,flexColumn=flexColumn)
 
     if 'WithText' in behaviour:
         ignoredKeys = ['j', 'k','l','h', '[', 'q'] # ignore default event while in text input
@@ -401,6 +400,7 @@ def interactiveTable(
         nonlocal table
         nonlocal items
         nonlocal filters
+        nonlocal size_offset
 
         if len(filters) and filter_callback is not None:
             if direction == 'next':
@@ -409,7 +409,11 @@ def interactiveTable(
                 currentFilterIndex = (currentFilterIndex-1)%len(filters)
 
             selectedItem = table.real_items[highlightPos] if highlightPos<len(table.items) else None
-            filter_callback(filters[currentFilterIndex], items, table)
+             
+            new_items, new_message = filter_callback(filters[currentFilterIndex], items)
+            Cursor.clearForward()
+            message_length = max(len(item) for item in new_message.split('\n'))
+            table.update(new_items, size_offset=message_length+2, message=new_message)
 
             realSelectedPos = table.real_items.index(selectedItem) if selectedItem in table.items else None
 
@@ -475,7 +479,7 @@ def interactiveTable(
 
         table.display(
             [*staticHighlights,*highlights],
-            len(inputText.split('\n')) if 'WithText' in behaviour else 0,
+            # upoffset=len(inputText.split('\n')) if 'WithText' in behaviour else 0,
             scrollAmount=highlightPos-floor(maxListSize/2) if highlightPos>maxListSize/2 else 0
         )
 
@@ -532,24 +536,29 @@ if __name__ == "__main__":
     #         break
 
 
-    def myfilter(filter_name:str, items:List[List[str]], table:HighlightedTable):
-        Cursor.clearForward()
+    def myfilter(filter_name:str, items:List[List[str]]):
+        new_items = items
+
         if filter_name == 'half':
-            table.update(list(filter(lambda x:int(x[0].split(' ')[1])%2 == 0, items)), message='filter: half')
+            new_items = list(filter(lambda x:int(x[0].split(' ')[1])%2 == 0, items))
+            filter_name = 'filter: half'
         else:
-            table.update(items, message='filter: none')
+            filter_name = 'filter: none'
+
+        return new_items, filter_name
+
 
     results = interactiveTable(
         tablelist,
         ['' ,"Episódios", "Nome"],
         "rcc",
-        behaviour='multiSelectWithText',
+        behaviour='multiSelect',
         maxListSize=7,
         staticHighlights=staticHighlights,
         highlightRange=(2,2),
         filters=['none','half'],
-        filter_callback=myfilter
-
+        filter_callback=myfilter,
+        flexColumn=0,
     )
     print(results)
 

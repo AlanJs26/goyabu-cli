@@ -1,5 +1,5 @@
-from goyabucli.scraper import Scraper,Anime,Episode,VideoUrl
-from goyabucli.utils import animeTitle2Id, headers
+from ..scraper import Scraper,Anime,Episode,VideoUrl
+from ..utils import animeTitle2Id, headers
 
 from typing import List
 

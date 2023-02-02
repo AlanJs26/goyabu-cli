@@ -3,7 +3,7 @@ import requests
 from typing import List
 import webbrowser
 
-from goyabucli.translation import error
+from .translation import error
 from .scraper import Anime, Scraper
 from .sessionManager import SessionItem, SessionManager
 from .progress import ProgressBar, progress

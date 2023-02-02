@@ -3,7 +3,7 @@ from typing import List,Union,Optional
 from datetime import datetime, timezone
 from os import path, makedirs
 import json
-from .dropdown import Cursor, interactiveTable,bcolors,HighlightedTable
+from .dropdown import interactiveTable,bcolors
 from .translation import t
 from .progress import ProgressBar
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -232,7 +232,7 @@ class SessionManager():
             json.dump(content, file, indent=4)
 
 
-    def select(self, hintText=t('Digite: '), maxListSize=5, width=100, query='') -> Union[SessionItem,str]:
+    def select(self, hintText=t('Digite: '), maxListSize=5, query='') -> Union[SessionItem,str]:
 
         if query:
             if query.isdigit():
@@ -254,14 +254,19 @@ class SessionManager():
 
         table_rows = [[str(len(self.session_items)-index),item.title, format_status(item)] for index,item in enumerate(self.session_items)]
 
-        def myfilter(filter_name:str, items:List[List[str]], table:HighlightedTable):
-            Cursor.clearForward()
+        def myfilter(filter_name:str, items:List[List[str]]):
+            new_items = items
+            new_message = 'filter: none'
+
             if filter_name == 'incomplete':
-                table.update(list(filter(lambda x: t('Completo') not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
+                new_items = list(filter(lambda x: t('Completo') not in x[2], items))
+                new_message = f'filter: {filter_name}'
             elif filter_name == 'available':
-                table.update(list(filter(lambda x: bcolors['grey'] not in x[2] and bcolors['green'] not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
-            else:
-                table.update(items, message='filter: none', maxListSize=maxListSize)
+                new_items = list(filter(lambda x: bcolors['grey'] not in x[2] and bcolors['green'] not in x[2], items))
+                new_message = f'filter: {filter_name}'
+
+            return new_items, new_message
+
 
         results = interactiveTable(
             table_rows,
@@ -269,7 +274,6 @@ class SessionManager():
             "ccc",
             behaviour='singleWithText',
             maxListSize=maxListSize,
-            width=width,
             flexColumn=1,
             highlightRange=(2,2),
             hintText=hintText,
@@ -288,7 +292,7 @@ class SessionManager():
 
         return self.session_items[results.realSelectedPos]
 
-    def multi_select(self, hintText=t('Digite: '), maxListSize=5, width=100, query='') -> Union[List[SessionItem],str]:
+    def multi_select(self, hintText=t('Digite: '), maxListSize=5, query='') -> Union[List[SessionItem],str]:
 
         if query:
             if query.isdigit() and int(query) <= len(self.session_items):
@@ -310,14 +314,18 @@ class SessionManager():
 
         table_rows = [[str(len(self.session_items)-index),item.title, format_status(item)] for index,item in enumerate(self.session_items)]
 
-        def myfilter(filter_name:str, items:List[List[str]], table:HighlightedTable):
-            Cursor.clearForward()
+        def myfilter(filter_name:str, items:List[List[str]]):
+            new_items = items
+            new_message = 'filter: none'
+
             if filter_name == 'incomplete':
-                table.update(list(filter(lambda x: t('Completo') not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
+                new_items = list(filter(lambda x: t('Completo') not in x[2], items))
+                new_message = f'filter: {filter_name}'
             elif filter_name == 'available':
-                table.update(list(filter(lambda x: bcolors['grey'] not in x[2] and bcolors['green'] not in x[2], items)), message=f'filter: {filter_name}', maxListSize=maxListSize)
-            else:
-                table.update(items, message='filter: none', maxListSize=maxListSize)
+                new_items = list(filter(lambda x: bcolors['grey'] not in x[2] and bcolors['green'] not in x[2], items))
+                new_message = f'filter: {filter_name}'
+
+            return new_items, new_message
 
         results = interactiveTable(
             table_rows,
@@ -325,7 +333,6 @@ class SessionManager():
             "ccc",
             behaviour='multiSelectWithText',
             maxListSize=maxListSize,
-            width=width,
             flexColumn=1,
             highlightRange=(2,2),
             hintText=hintText,

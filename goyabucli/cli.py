@@ -1,5 +1,5 @@
-from goyabucli.anilistManager import AnilistManager
-from goyabucli.serverManager import ServerManager
+from .anilistManager import AnilistManager
+from .serverManager import ServerManager
 from .scraperManager import ScraperManager
 from .anilistManager import AnilistManager, MissingToken
 from .sessionManager import SessionManager, SessionItem
@@ -49,7 +49,6 @@ def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_rang
                 'llc',
                 maxListSize=7,
                 highlightRange=(2,2),
-                width=20,
                 flexColumn=1
             )
 
@@ -94,7 +93,6 @@ def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_rang
                 behaviour='single',
                 maxListSize=10,
                 highlightRange=(0,1),
-                width=20,
                 flexColumn=1
             )
 
@@ -121,7 +119,6 @@ def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_rang
             behaviour='multiSelectWithText',
             maxListSize=13,
             highlightRange=(1,1),
-            width=20,
             flexColumn=1,
             hintText=t('deseja assistir todos os episódios? [S/n]: ')
         )
@@ -135,7 +132,6 @@ def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_rang
                 behaviour='multiSelect',
                 maxListSize=13,
                 highlightRange=(1,1),
-                width=20,
                 flexColumn=1
             )
 
@@ -329,7 +325,6 @@ def serverTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_ra
                     'llc',
                     maxListSize=7,
                     highlightRange=(2,2),
-                    width=20,
                     flexColumn=1
                 )
 
@@ -391,7 +386,6 @@ def serverTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_ra
                     behaviour='single',
                     maxListSize=10,
                     highlightRange=(0,1),
-                    width=20,
                     flexColumn=1
                 )
 

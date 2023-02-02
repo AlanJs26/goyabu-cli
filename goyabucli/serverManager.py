@@ -3,9 +3,9 @@ from urllib.parse import parse_qs, quote
 from typing import List
 import socket
 
-from goyabucli.sessionManager import SessionItem
-from goyabucli.translation import error
-from goyabucli.utils import headers
+from .sessionManager import SessionItem
+from .translation import error
+from .utils import headers
 
 
 class ServerManager():

@@ -2,7 +2,7 @@ from typing import List
 import requests
 import re
 import json
-from goyabucli.utils import headers
+from ..utils import headers
 
 
 class BloggerExtractor():

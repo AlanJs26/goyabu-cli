@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List,Tuple,Set,Dict
-from goyabucli.utils import headers
+from .utils import headers
 
 class VideoUrl():
     def __init__(self, url:str, quality:str, lang:str, source:str, scrapers:List['Scraper']=[], ready=False):

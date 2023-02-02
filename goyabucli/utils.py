@@ -38,8 +38,10 @@ def animeTitle2Id(title:str):
 
     return title
 
-def nameTrunc(text, length):
+def nameTrunc(text, length, offset=0):
     columns = get_terminal_size().columns
+    columns -= offset
+
     if columns < length:
         nameSlice = slice(None, len(text)-(length-columns))
         return text[nameSlice]+'...'
