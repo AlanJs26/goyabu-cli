@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name="goyabu-cli"
-version="1.0.11"
+version="1.0.12"
 license = { file = "LICENSE" }
 readme = "README.md"
 authors=[{ name = "AlanJS26", email = "alanjoses.29@gmail.com" }]
