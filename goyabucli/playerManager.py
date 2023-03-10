@@ -17,6 +17,7 @@ class PlayerManager():
         self.root = root
         self.title = title
         self.episodes = episodes
+        self.headers_per_ep = []
 
         self.playlist_folder = path.join(root,'playlists/')
 
@@ -33,7 +34,7 @@ class PlayerManager():
         from python_mpv_jsonipc import MPV
 
         if isWindows:
-            mpv = MPV()
+            mpv = MPV(user_agent=headers['User-Agent'])
         else:
             mpv = MPV(ipc_socket="/tmp/mpv-socket", user_agent=headers['User-Agent'])
 
@@ -41,6 +42,9 @@ class PlayerManager():
 
         # -----
         mpv.playlist_pos = 0
+        header_fields = self.headers_per_ep[0]
+        mpv.command('set_property', 'options/http-header-fields', header_fields)
+        print(header_fields)
         mpv.play(path)
 
         mpv.pause = True
@@ -72,7 +76,13 @@ class PlayerManager():
 
                 if not mpv.media_title or 'Ep ' not in mpv.media_title:
                     continue
+
                 mpvEpIndex = int(mpv.media_title.split('-')[0].replace('Ep ', ''))
+                playlistPos = mpv.playlist_playing_pos
+                if isinstance(playlistPos, int):
+                    header_fields = self.headers_per_ep[playlistPos]
+                    mpv.command('set_property', 'options/http-header-fields', header_fields)
+                print()
                 duration = mpv.duration
                 working=True
         except:
@@ -105,6 +115,9 @@ class PlayerManager():
             sorted_links = sorted(episode.getLinksBySource(self.scraperName), key=lambda x:resolutionRanking.index(x.quality))
 
             fileText+=f'{sorted_links[0].url}\n'
+            self.headers_per_ep.append(
+                ','.join(f'{k}: {v}' for k,v in sorted_links[0].headers.items() if k != 'User-Agent')
+            )
             # for link in sorted_links:
             #     fileText+=f'{link.url}\n'
 
