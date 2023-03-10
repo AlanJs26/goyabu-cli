@@ -69,7 +69,7 @@ class Goyabu(Scraper):
             ep.addSource(self.name, [url])
 
             episodes.append(ep)
-        episodes.sort(key=lambda x:int(x.id), reverse=True)
+        episodes.sort(key=lambda x:int(x.id), reverse=False)
         return episodes
 
 

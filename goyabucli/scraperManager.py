@@ -1,10 +1,10 @@
 from typing import List, Dict
 from .scraper import Scraper,Anime,bindScrapers
-from .scrapers.goyabu import Goyabu
+# from .scrapers.goyabu import Goyabu
 from .scrapers.animefire import AnimeFire
 from .scrapers.gogoanime import Gogoanime
 
-SCRAPERS:List[Scraper] = [AnimeFire(), Goyabu(), Gogoanime()]
+SCRAPERS:List[Scraper] = [AnimeFire(), Gogoanime()]
 
 class ScraperManager():
     def __init__(self):

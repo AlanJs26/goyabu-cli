@@ -25,7 +25,9 @@ class PlayerManager():
 
 
     def isMpvAvailable(self) -> bool:
-        return True
+        from shutil import which
+
+        return which('mpv') is not None
 
     def playWithMPV(self, path:str, seek_time=0, playlistPos=None) -> PlayerManagerResults:
         from python_mpv_jsonipc import MPV
