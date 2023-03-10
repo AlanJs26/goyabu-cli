@@ -3,8 +3,9 @@ from .scraper import Scraper,Anime,bindScrapers
 # from .scrapers.goyabu import Goyabu
 from .scrapers.animefire import AnimeFire
 from .scrapers.gogoanime import Gogoanime
+from .scrapers.superanimes import SuperAnimes
 
-SCRAPERS:List[Scraper] = [AnimeFire(), Gogoanime()]
+SCRAPERS:List[Scraper] = [AnimeFire(), Gogoanime(), SuperAnimes()]
 
 class ScraperManager():
     def __init__(self):

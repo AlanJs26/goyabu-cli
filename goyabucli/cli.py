@@ -231,13 +231,14 @@ def configTUI(config: Config, anilistManager:AnilistManager):
         }
         rows = [ [key, value] for key,value in  config_dict.items() ]
 
+        print(rows)
         results = interactiveTable(
             rows,
             ['Field', 'Value'],
             "cc",
             highlightRange=(0,2),
             staticHighlights=[Highlight(0, 'green' if config.token else 'fail')],
-            flexColumn=2,
+            flexColumn=1,
             maxListSize=len(config_dict)
         )
 
