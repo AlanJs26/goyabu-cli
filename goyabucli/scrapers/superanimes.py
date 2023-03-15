@@ -73,4 +73,4 @@ class SuperAnimes(Scraper):
             next_btn = dom.css('.nextpostslink')
 
 
-        return episodes
+        return sorted(episodes, key=lambda x:int(x.id), reverse=True)
