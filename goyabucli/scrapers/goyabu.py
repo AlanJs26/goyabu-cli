@@ -33,7 +33,7 @@ class Goyabu(Scraper):
         return []
 
     def search(self, query:str) -> List[Anime]:
-        html = requests.get(f'https://goyabu.com/?s={query.replace(" ","+")}', headers=headers).text
+        html = requests.get(f'https://goyabu.org/?s={query.replace(" ","+")}', headers=headers).text
         dom = Selector(html)
 
         a_link = dom.xpath('//*[@id="main"]/div/div[1]/div/div')
