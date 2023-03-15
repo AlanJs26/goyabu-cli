@@ -5,6 +5,7 @@ from .scrapers.animefire import AnimeFire
 from .scrapers.gogoanime import Gogoanime
 from .scrapers.superanimes import SuperAnimes
 from .scrapers.vizer import Vizer
+from .progress import ProgressBar
 
 SCRAPERS:List[Scraper] = [AnimeFire(), Gogoanime(), SuperAnimes(), Goyabu(), Vizer()]
 
@@ -17,16 +18,25 @@ class ScraperManager():
         }
 
     @bindScrapers
-    def search(self, query:str, preferedScrapers=[]) -> List[Anime]:
+    def search(self, query:str, preferedScrapers=[], verbose=False) -> List[Anime]:
         scrapers = self.scrapers
         if preferedScrapers:
             scrapers = [scraper for scraper in self.scrapers if scraper.name in preferedScrapers]
 
         new_animes = []
+
+        pbar = None
+        if verbose:
+            pbar = ProgressBar(total=len(scrapers), postfix="Scrapers", leave=False)
+
         for scraper in scrapers:
             for anime in scraper.search(query):
                 new_animes.append(anime)
                 self._addAnime(anime)
+            if pbar:
+                pbar.update(1)
+        if pbar:
+            pbar.close()
 
         return new_animes
 
