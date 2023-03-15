@@ -34,7 +34,7 @@ def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_rang
 
     if isinstance(selected_item,str) or (isinstance(selected_item,SessionItem) and not selected_item.lastSource):
         anime_title = selected_item if isinstance(selected_item,str) else selected_item.title 
-        animes = manager.search(anime_title, default_scraper)
+        animes = manager.search(anime_title, default_scraper, verbose=not config.silent)
 
         if not animes:
             error(t("Nenhum anime encontrado com o nome '{}'", anime_title))
@@ -111,7 +111,7 @@ def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_rang
         error(t("Não foi possível acessar os episódios de '{}' usando '{}'", anime.title, anime.source))
         exit()
 
-    if (not always_yes and not is_range_valid(episodes_range)) or not is_range_valid(episodes_range):
+    if (not always_yes and not is_range_valid(episodes_range)) or not is_range_valid(episodes_range) or default_anime_name:
         results = interactiveTable(
             items=episodes_names,
             header=['',t('Episodios')],
@@ -159,7 +159,7 @@ def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_rang
             error(t('Não foi encontrado nenhum link válido para o episódio {}', episode.index+1))
             exit()
 
-    player = PlayerManager(anime.title, anime.source, episodes, root=config.config_dir)
+    player = PlayerManager(anime.title, anime.source, episodes, root=config.config_dir, lang=config.lang)
 
     playlist_file = player.generatePlaylistFile('playlist')
 
@@ -212,7 +212,6 @@ def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_rang
         anilistManager.updateSessionItem(anime_session_item)
         anilistManager.set_watching([anime_session_item])
 
-    # anilistManager.update_session(sessionmanager, True)
     sessionmanager.dump(verbose=True, number_to_update=10)
 
 
@@ -308,7 +307,7 @@ def serverTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_ra
 
         if isinstance(selected_item,str):
             anime_title = selected_item if isinstance(selected_item,str) else selected_item.title 
-            animes = manager.search(anime_title, default_scraper)
+            animes = manager.search(anime_title, default_scraper, verbose=not config.silent)
 
             if not animes:
                 error(t("Nenhum anime encontrado com o nome '{}'", anime_title))
