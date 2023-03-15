@@ -56,7 +56,7 @@ class Vizer(Scraper):
 
                     for item in result['list'].values():
 
-                        episode = Episode(title=f'S{i+1}E{item["name"]} - {item["title"]}', id=item['id'])
+                        episode = Episode(title=f'S{i+1}E{item["name"]} - {item["title"]}', id=str(len(episodes)+1))
 
                         result = requests.post(
                             url='https://vizer.tv/includes/ajax/publicFunctions.php',
