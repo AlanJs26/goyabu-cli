@@ -64,7 +64,9 @@ To run the program, type `python runner.py` in the program folder or add to your
 | ----------------------------------------------------- | ------------------------------------------------------------------ | ---------- | ------------------ |
 | [animefire](https://animefire.com/)             | website used to watch anime                                        | Portuguese |                    |
 | [goyabu](https://goyabu.com/)             | website used to watch anime                                        | Portuguese |                    |
+| [superanimes](https://superanimes.biz/)             | website used to watch anime                                        | Portuguese |                    |
 | [gogoanime](https://gogoanime.dk/)             | website used to watch anime                                        | English |                    |
+| [vizer](https://vizer.tv/)             | website used to watch movies,tv shows and animes                                        | Portuguese,English |                    |
 
 ## Language
 
