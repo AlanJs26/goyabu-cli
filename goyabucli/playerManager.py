@@ -11,13 +11,14 @@ class PlayerManagerResults(TypedDict):
     duration:int
 
 class PlayerManager():
-    def __init__(self, title:str, scraperName:str, episodes:List[Episode], root='', playlistPos=0):
+    def __init__(self, title:str, scraperName:str, episodes:List[Episode], root='', playlistPos=0, lang='pt'):
         self.scraperName = scraperName
         self.playlistPos = playlistPos
         self.root = root
         self.title = title
         self.episodes = episodes
         self.headers_per_ep = []
+        self.lang = lang
 
         self.playlist_folder = path.join(root,'playlists/')
 
@@ -115,7 +116,8 @@ class PlayerManager():
                 continue
             fileText+=f'#EXTINF:-1,Ep {episode.id} - {episode.title.replace("#", "")}\n'
             
-            sorted_links = sorted(episode.getLinksBySource(self.scraperName), key=lambda x:resolutionRanking.index(x.quality))
+            sorted_by_quality = sorted(episode.getLinksBySource(self.scraperName), key=lambda x:resolutionRanking.index(x.quality))
+            sorted_links = sorted(sorted_by_quality, key=lambda x:x.lang==self.lang, reverse=True)
 
             fileText+=f'{sorted_links[0].url}\n'
             self.headers_per_ep.append(
