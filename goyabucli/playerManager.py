@@ -32,6 +32,7 @@ class PlayerManager():
 
     def playWithMPV(self, path:str, seek_time=0, playlistPos=None) -> PlayerManagerResults:
         from python_mpv_jsonipc import MPV
+        print('starting MPV')
 
         if isWindows:
             mpv = MPV(user_agent=headers['User-Agent'])
@@ -44,10 +45,11 @@ class PlayerManager():
         mpv.playlist_pos = 0
         header_fields = self.headers_per_ep[0]
         mpv.command('set_property', 'options/http-header-fields', header_fields)
-        print(header_fields)
         mpv.play(path)
 
         mpv.pause = True
+
+        print('waiting MPV...')
         
         timeout = 0
         while (not mpv.media_title or not mpv.seekable) and timeout < 100:
@@ -55,6 +57,7 @@ class PlayerManager():
             timeout += 1
 
         if playlistPos is not None:
+            print('waiting media...')
             mpv.command('playlist-play-index', playlistPos)
 
             timeout = 0
@@ -70,6 +73,7 @@ class PlayerManager():
         working=False
 
         try:
+            print(f'playing {mpv.media_title}')
             while mpv.media_title:
                 sleep(1)
                 seek_time = mpv.playback_time
@@ -82,7 +86,6 @@ class PlayerManager():
                 if isinstance(playlistPos, int):
                     header_fields = self.headers_per_ep[playlistPos]
                     mpv.command('set_property', 'options/http-header-fields', header_fields)
-                print()
                 duration = mpv.duration
                 working=True
         except:
