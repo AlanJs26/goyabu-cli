@@ -7,6 +7,7 @@ from .translation import error
 from .scraper import Anime, Scraper
 from .sessionManager import SessionItem, SessionManager
 from .progress import ProgressBar, progress
+from .scraperManager import get_scrapers_as_dict
 
 
 
@@ -108,8 +109,11 @@ class AnilistManager():
         return 0
 
     def updateSessionItem(self, session_item:SessionItem):
-        if not session_item.anilist_id:
-            foundAnime = self.search(session_item.title)
+        if not session_item.anilist_id and get_scrapers_as_dict()[session_item.lastSource].supports_anilist:
+            try:
+                foundAnime = self.search(session_item.title)
+            except AnimeNotFound:
+                foundAnime = None
             if foundAnime:
                 session_item.anilist_id = foundAnime.anilist_id
                 session_item.episodesInTotal = foundAnime.episodesInTotal
@@ -224,7 +228,7 @@ class AnilistManager():
                     id = session_item.anilist_id
 
                     try:
-                        if not id:
+                        if not id and get_scrapers_as_dict()[session_item.lastSource].supports_anilist:
                             id = self.search(session_item.title).anilist_id
                     except AnimeNotFound:
                         if not self.silent:

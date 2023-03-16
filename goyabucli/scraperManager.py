@@ -9,6 +9,9 @@ from .progress import ProgressBar
 
 SCRAPERS:List[Scraper] = [AnimeFire(), Gogoanime(), SuperAnimes(), Goyabu(), Vizer()]
 
+def get_scrapers_as_dict():
+    return { scraper.name: scraper for scraper in SCRAPERS }
+
 class ScraperManager():
     def __init__(self):
         self.scrapers = SCRAPERS

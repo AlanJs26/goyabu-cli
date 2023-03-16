@@ -176,6 +176,7 @@ class Scraper(ABC):
         self.scrapers:List['Scraper']=scrapers
         self.name = name
         self.lang = lang
+        self.supports_anilist = True
 
     @abstractmethod
     def parseLink(self, link:VideoUrl) -> List[VideoUrl]:

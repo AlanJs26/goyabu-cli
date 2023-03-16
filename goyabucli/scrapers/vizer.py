@@ -9,10 +9,12 @@ import requests
 from parsel import Selector
 import re
 import PyBypass as bypasser
+import json
 
 class Vizer(Scraper):
     def __init__(self):
         super().__init__('vizer', ['pt'])
+        self.supports_anilist = False
 
     def search(self, query:str) -> List[Anime]:
 
@@ -72,6 +74,25 @@ class Vizer(Scraper):
 
                         episodes.append(episode)
                     pbar.update(1)
+        else:
+
+            match = re.search(r'videoPlayerBox\((\{\"status.+?)\);',html)
+            if not match:
+                return []
+
+            data_langs = json.loads(match.group(1))
+            title = dom.xpath('//*[@id="ms"]/div[1]/section/h2/text()').get()
+            if not title:
+                return []
+
+            movie = Episode(title=title, id='1')
+
+            for lang_item in data_langs['list'].values():
+                lang = 'en' if lang_item['lang'] == '1' else 'pt'
+                url = VideoUrl(lang_item['id'],'sd',lang,self.name)
+                movie.addSource(self.name, [url])
+
+            episodes.append(movie)
 
         return episodes
 
