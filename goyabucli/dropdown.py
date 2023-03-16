@@ -152,6 +152,8 @@ class HighlightedTable:
         if self.flexColumn < 0 or self.flexColumn >= len(self.header):
             raise Exception('Invalid self.flexColumn: must be a valid column index')
         for item in self.items:
+            if not isinstance(item[0], str) or not isinstance(item[1], str):
+                raise Exception('Table entries must be strings')
             linelength = reduce(lambda p,n:len(n)+p, item, 0)
             item[self.flexColumn] = nameTrunc(item[self.flexColumn], length=linelength+18, offset=self.size_offset)
         table = tt.to_string(

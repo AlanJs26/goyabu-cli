@@ -225,12 +225,11 @@ def configTUI(config: Config, anilistManager:AnilistManager):
             'Anilist username': config.anilist_username,
             'Config directory': config.config_dir,
             'Player': config.player,
-            'Silent': config.silent,
+            'Silent': str(config.silent), 
             'Language': config.lang,
         }
         rows = [ [key, value] for key,value in  config_dict.items() ]
 
-        print(rows)
         results = interactiveTable(
             rows,
             ['Field', 'Value'],
