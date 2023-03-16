@@ -43,8 +43,8 @@ class ScraperManager():
 
         return new_animes
 
-    def searchLocal(self, query:str) -> List[Anime]:
-        return [Anime('title', 'anime1')]
+    # def searchLocal(self, query:str) -> List[Anime]:
+    #     return [Anime('title', 'anime1')]
 
     def _addAnime(self, new_anime:Anime):
         if new_anime.id in self.animes:
