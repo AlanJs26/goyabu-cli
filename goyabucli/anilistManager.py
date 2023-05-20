@@ -228,7 +228,7 @@ class AnilistManager():
                     id = session_item.anilist_id
 
                     try:
-                        if not id and get_scrapers_as_dict()[session_item.lastSource].supports_anilist:
+                        if not id and session_item.lastSource and get_scrapers_as_dict()[session_item.lastSource].supports_anilist:
                             id = self.search(session_item.title).anilist_id
                     except AnimeNotFound:
                         if not self.silent:
@@ -261,7 +261,7 @@ class AnilistManager():
 
         if preferRemote:
             for watch_item in intersecting_items:
-                session.update(watch_item.anime, watch_item.lastEpisode, watch_item.watchTime, watch_item.duration, episodesInTotal=watch_item.episodesInTotal)
+                session.update(watch_item.anime, watch_item.lastEpisode, watch_item.watchTime, watch_item.duration, episodesInTotal=watch_item.episodesInTotal, anilist_id=watch_item.anilist_id)
         else:
             for watch_item in intersecting_items:
                 session.update(watch_item.anime, episodesInTotal=watch_item.episodesInTotal, anilist_id=watch_item.anilist_id)
