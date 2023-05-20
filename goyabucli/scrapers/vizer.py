@@ -118,9 +118,11 @@ class Vizer(Scraper):
 
         url = match.group(1)
         url = url.split('?')[0]
-        bypassed_url = bypasser.bypass(url)
+        bypassed_url:str = bypasser.bypass(url)
 
         if bypassed_url:
+            if bypassed_url.endswith('='):
+                return []
             link.url = bypassed_url
             link.ready = True
                 
