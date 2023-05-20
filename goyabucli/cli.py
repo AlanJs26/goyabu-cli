@@ -192,6 +192,9 @@ def mainTUI(anilistManager:AnilistManager, default_anime_name:str, episodes_rang
         results = player.play(playlist_file, config.player)
 
 
+    if not results['working']:
+        return
+
     sessionmanager.add([anime])
 
     sessionmanager.update(anime, results['lastEpisode'], results['watchTime'], results['duration'])
