@@ -4,11 +4,13 @@ from typing import List, TypedDict, Optional
 from .scraper import Episode
 from .dropdown import isWindows
 from .utils import headers
+from .progress import ProgressBar
 
 class PlayerManagerResults(TypedDict):
     lastEpisode:int
     watchTime:int
     duration:int
+    working:bool
 
 class PlayerManager():
     def __init__(self, title:str, scraperName:str, episodes:List[Episode], root='', playlistPos=0, lang='pt'):
@@ -33,7 +35,8 @@ class PlayerManager():
 
     def playWithMPV(self, path:str, seek_time=0, playlistPos=None) -> PlayerManagerResults:
         from python_mpv_jsonipc import MPV
-        print('starting MPV')
+
+        bar = ProgressBar(postfix=['starting MPV', 'waiting MPV', 'waiting media', 'playing media'], leave=False)
 
         if isWindows:
             mpv = MPV(user_agent=headers['User-Agent'])
@@ -50,7 +53,7 @@ class PlayerManager():
 
         mpv.pause = True
 
-        print('waiting MPV...')
+        bar.update(1)
         
         timeout = 0
         while (not mpv.media_title or not mpv.seekable) and timeout < 100:
@@ -58,7 +61,7 @@ class PlayerManager():
             timeout += 1
 
         if playlistPos is not None:
-            print('waiting media...')
+            bar.update(1)
             mpv.command('playlist-play-index', playlistPos)
 
             timeout = 0
@@ -73,8 +76,8 @@ class PlayerManager():
 
         working=False
 
+        bar.update(1)
         try:
-            print(f'playing {mpv.media_title}')
             while mpv.media_title:
                 sleep(1)
                 seek_time = mpv.playback_time
@@ -89,9 +92,11 @@ class PlayerManager():
                     mpv.command('set_property', 'options/http-header-fields', header_fields)
                 duration = mpv.duration
                 working=True
+                bar.close()
         except:
             pass
 
+        bar.close()
         if not working:
             print('\nparece que o link deste anime não está funcionando :(\nTente um anime diferente.')
 
@@ -100,7 +105,7 @@ class PlayerManager():
         except:
             print('Saindo do MPV...')
 
-        return {"lastEpisode": mpvEpIndex, "watchTime": int(seek_time or 0), "duration": int(duration or 0)}
+        return {"lastEpisode": mpvEpIndex, "watchTime": int(seek_time or 0), "duration": int(duration or 0), "working": working}
 
     def play(self, path:str, player_path:str) -> PlayerManagerResults:
         system(f'{player_path} "{path}"')
