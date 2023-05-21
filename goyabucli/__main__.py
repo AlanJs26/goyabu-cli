@@ -1,5 +1,6 @@
 from argparse import RawTextHelpFormatter, ArgumentParser
 from os import path,makedirs
+from importlib.metadata import version
 
 import json
 
@@ -67,6 +68,7 @@ parser.add_argument('--config',      action='store_true',
                     help='change config')
 parser.add_argument('--config-dir',    action='store', default='~/.goyabucli',    type=dir_path, metavar='config directory',
                     help='directory for the watch list')
+parser.add_argument('--version', action='version', version=version('goyabu-cli'))
 
 args = parser.parse_args()
 
