@@ -14,7 +14,7 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Update README.md
         run: |
-          pip install -e .
+          pip install -r requirements.txt
           python scraper_status.py
 
       - name: pull-request
