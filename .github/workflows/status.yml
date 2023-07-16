@@ -1,7 +1,11 @@
 name: README Update Scraper Status
 
 on:
-  push
+  push:
+    paths:
+      - '**.toml'
+  schedule:
+    - cron: '0 0 1 * *'
 
 jobs:
   update_templates:
