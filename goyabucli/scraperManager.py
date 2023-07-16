@@ -23,6 +23,7 @@ class ScraperManager():
 
     def test(self, verbose=False) -> dict[str,bool]:
         results = self.search('a', verbose=True)
+        rprint([f"{r.title} -- {r.availableScrapers}"] for r in results)
         working_dict = {}
         for scraper in self.scrapers:
             sample_anime = None
@@ -31,6 +32,8 @@ class ScraperManager():
                     sample_anime=anime
                     break
             if sample_anime is None:
+                rprint(f'testing "{scraper.name}"')
+                rprint(f'[red]failed "no animes found"')
                 working_dict[scraper.name] = False
                 continue
 
@@ -40,11 +43,16 @@ class ScraperManager():
             episodes = sample_anime.retrieveEpisodes()
             if not episodes:
                 working_dict[scraper.name] = False
+                rprint(f'[red]failed "no episodes found"')
                 continue
 
             episodes[0].retrieveLinks(scraper.name)
             links = episodes[0].getLinksBySource(scraper.name)
             working_dict[scraper.name] = any(link.test(verbose=verbose) for link in links)
+            if working_dict[scraper.name]:
+                rprint(f'[green]succeeded')
+            else:
+                rprint(f'[red]failed "links not working"')
 
         return working_dict
 
