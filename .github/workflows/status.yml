@@ -1,0 +1,34 @@
+name: README Update Scraper Status
+
+on:
+  push
+
+jobs:
+  update_templates:
+    name: "Update Templates"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "📥 Update GitHub Readme files"
+        uses: actions/checkout@main
+
+      # Runs a set of commands using the runners shell
+      - name: Update README.md
+        run: |
+          python .github/workflows/scraper_status.py
+
+      - name: pull-request
+        uses: repo-sync/pull-request@v2
+        with:
+          destination_branch: "main"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: commit
+        run: |
+          git config --global user.email alanjoses.29@gmail.com
+          git config --global user.name AlanJs26
+          git add .
+          git commit -m "README Scraper Status" -a
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
