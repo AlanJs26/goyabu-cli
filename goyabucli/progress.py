@@ -34,10 +34,13 @@ class ProgressBar():
         self._show()
 
     def _refresh_width(self):
-        if isinstance(self.postfix, str):
-            self.width = get_terminal_size().columns - len(self.left_delimiter+self.postfix+self.right_delimiter)
-        else:
-            self.width = get_terminal_size().columns - len(self.left_delimiter+self.postfix[self.count]+self.right_delimiter)
+        try:
+            if isinstance(self.postfix, str):
+                self.width = get_terminal_size().columns - len(self.left_delimiter+self.postfix+self.right_delimiter)
+            else:
+                self.width = get_terminal_size().columns - len(self.left_delimiter+self.postfix[self.count]+self.right_delimiter)
+        except:
+            self.width = 50
 
     def _show(self):
         self._refresh_width()
