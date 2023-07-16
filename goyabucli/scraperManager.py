@@ -6,6 +6,7 @@ from .scrapers.gogoanime import Gogoanime
 from .scrapers.superanimes import SuperAnimes
 from .scrapers.vizer import Vizer
 from .progress import ProgressBar
+from rich import print as rprint
 
 SCRAPERS:List[Scraper] = [AnimeFire(), Gogoanime(), SuperAnimes(), Goyabu(), Vizer()]
 
@@ -19,6 +20,33 @@ class ScraperManager():
         self.animes:Dict[str,Anime] = {
             # 'id1' : Anime('title', 'anime1')
         }
+
+    def test(self, verbose=False) -> dict[str,bool]:
+        results = self.search('a', verbose=True)
+        working_dict = {}
+        for scraper in self.scrapers:
+            sample_anime = None
+            for anime in results:
+                if scraper.name in anime.availableScrapers:
+                    sample_anime=anime
+                    break
+            if sample_anime is None:
+                working_dict[scraper.name] = False
+                continue
+
+            if verbose:
+                rprint(f'testing "{scraper.name}" with "{sample_anime.title}"')
+
+            episodes = sample_anime.retrieveEpisodes()
+            if not episodes:
+                working_dict[scraper.name] = False
+                continue
+
+            episodes[0].retrieveLinks(scraper.name)
+            links = episodes[0].getLinksBySource(scraper.name)
+            working_dict[scraper.name] = any(link.test(verbose=verbose) for link in links)
+
+        return working_dict
 
     @bindScrapers
     def search(self, query:str, preferedScrapers=[], verbose=False) -> List[Anime]:

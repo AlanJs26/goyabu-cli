@@ -62,11 +62,11 @@ To run the program, type `python runner.py` in the program folder or add to your
 
 | Source                                                | Description                                                        | Language   | Comments           |
 | ----------------------------------------------------- | ------------------------------------------------------------------ | ---------- | ------------------ |
-| [animefire](https://animefire.com/)             | website used to watch anime                                        | Portuguese |                    |
-| [goyabu](https://goyabu.com/)             | website used to watch anime                                        | Portuguese |                    |
-| [superanimes](https://superanimes.biz/)             | website used to watch anime                                        | Portuguese |                    |
-| [gogoanime](https://gogoanime.dk/)             | website used to watch anime                                        | English |                    |
-| [vizer](https://vizer.tv/)             | website used to watch movies,tv shows and animes                                        | Portuguese,English |                    |
+| [animefire](https://animefire.com/) <!--animefire-->:x:             | website used to watch anime                                        | Portuguese |                    |
+| [goyabu](https://goyabu.com/)<!--goyabu-->:x:             | website used to watch anime                                        | Portuguese |                    |
+| [superanimes](https://superanimes.biz/)<!--superanimes-->:heavy_check_mark:             | website used to watch anime                                        | Portuguese |                    |
+| [gogoanime](https://gogoanime.dk/)<!--gogoanime-->:x:             | website used to watch anime                                        | English |                    |
+| [vizer](https://vizer.tv/)<!--vizer-->:x:             | website used to watch movies,tv shows and animes                                        | Portuguese,English |                    |
 
 ## Language
 

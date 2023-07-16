@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List,Tuple,Set,Dict
 from .utils import headers
+import requests
+from time import time
 
 class VideoUrl():
     def __init__(self, url:str, quality:str, lang:str, source:str, scrapers:List['Scraper']=[], ready=False):
@@ -10,6 +12,7 @@ class VideoUrl():
         self.ready = ready
         self.lang = lang
         self.headers = headers
+        self.TIMEOUT = 15
         self.quality = quality # sd,hd,full-hd,ultra-hd
 
     def getLink(self) -> List['VideoUrl']:
@@ -26,8 +29,27 @@ class VideoUrl():
         return found_links
 
 
-    def test(self) -> bool:
-        return True
+    def test(self, verbose=False) -> bool:
+        if verbose:
+            print(f'using timeout of {self.TIMEOUT} on {self.url}')
+
+        try:
+            result = requests.get(self.url, headers={**headers, **self.headers}, stream=True)
+            start_time = time()
+
+            for _ in result.iter_content(1024):
+                if time() > (start_time + self.TIMEOUT):
+                    raise requests.exceptions.Timeout 
+
+        except requests.exceptions.Timeout:
+            if verbose:
+                print('connection timed out')
+            return False
+
+        if verbose:
+            print(result.status_code)
+        
+        return result.status_code == 200
 
 def bindScrapers(f):
     def wrapper(self, *args, **kwargs):
@@ -76,7 +98,8 @@ class Episode():
         links.extend(found_links)
 
         for source in links.copy():
-            if not source.ready or not source.test():
+            # if not source.ready or not source.test():
+            if not source.ready:
                 links.remove(source)
 
 
@@ -94,18 +117,18 @@ class Episode():
 
     @bindScrapers
     def addSource(self, sourceName:str, urls:List[VideoUrl]) -> List[VideoUrl]:
-        working_urls = list(filter(lambda x : x.test(), urls))
+        # working_urls = list(filter(lambda x : x.test(), urls))
 
         # print(self.scrapers)
         if all(sourceName != source for source,_ in self.sources):
-            self.sources.append((sourceName, working_urls))
+            self.sources.append((sourceName, urls))
             # print(working_urls[0].scrapers)
-            return working_urls
+            return urls
 
         for item in self.sources:
             if item[0] == sourceName:
                 filtered_urls : List[VideoUrl] = []
-                for new_videourl in working_urls:
+                for new_videourl in urls:
                     if all(new_videourl.url != videourl.url for videourl in item[1]):
                         filtered_urls.append(new_videourl)
 
