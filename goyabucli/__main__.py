@@ -74,6 +74,7 @@ args = parser.parse_args()
 
 # DONE -> implement on demand server TUI
 # TODO -> add 'planning to watch' animes in main list as a filter
+# TODO -> implement unit tests for scrapers
 # DONE -> implement scraper filter to anime selection
 # DONE -> implement configuration TUI
 #   DONE -> config file

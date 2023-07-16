@@ -58,12 +58,20 @@ class ScraperManager():
 
         pbar = None
         if verbose:
-            pbar = ProgressBar(total=len(scrapers), postfix="Scrapers", leave=False)
+            pbar = ProgressBar(total=len(scrapers), postfix=[scraper.name for scraper in self.scrapers], leave=False)
 
         for scraper in scrapers:
-            for anime in scraper.search(query):
-                new_animes.append(anime)
-                self._addAnime(anime)
+            try:
+                search_result = scraper.search(query)
+            except:
+                print(f'Error searching {scraper.name}\r')
+                if pbar:
+                    pbar.update(1)
+                continue
+
+            for anime in search_result:
+                if new_anime := self._addAnime(anime): 
+                    new_animes.append(new_anime)
             if pbar:
                 pbar.update(1)
         if pbar:
@@ -74,8 +82,10 @@ class ScraperManager():
     # def searchLocal(self, query:str) -> List[Anime]:
     #     return [Anime('title', 'anime1')]
 
-    def _addAnime(self, new_anime:Anime):
+    def _addAnime(self, new_anime:Anime) -> None|Anime:
         if new_anime.id in self.animes:
             self.animes[new_anime.id].merge(new_anime)
         else:
             self.animes[new_anime.id] = new_anime
+            return new_anime
+

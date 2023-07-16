@@ -12,20 +12,14 @@ jobs:
     name: "Update Templates"
     runs-on: ubuntu-latest
     steps:
-      - name: "📥 Update GitHub Readme files"
+      - name: "📥 Update GitHub Readme"
         uses: actions/checkout@main
 
       # Runs a set of commands using the runners shell
-      - name: Update README.md
+      - name: Update README.md with Scraper Status
         run: |
           pip install -r requirements.txt
           python scraper_status.py
-
-      - name: pull-request
-        uses: repo-sync/pull-request@v2
-        with:
-          destination_branch: "main"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: commit
         run: |

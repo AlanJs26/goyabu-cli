@@ -12,7 +12,7 @@ class VideoUrl():
         self.ready = ready
         self.lang = lang
         self.headers = headers
-        self.TIMEOUT = 15
+        self.TIMEOUT = 60
         self.quality = quality # sd,hd,full-hd,ultra-hd
 
     def getLink(self) -> List['VideoUrl']:
