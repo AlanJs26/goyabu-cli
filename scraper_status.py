@@ -1,5 +1,5 @@
 import re
-from .goyabucli.scraperManager import ScraperManager
+from goyabucli.scraperManager import ScraperManager
 
 manager = ScraperManager()
 
